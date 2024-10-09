@@ -1,0 +1,179 @@
+import torch
+import numpy as np
+
+from tqdm import tqdm
+from copy import copy, deepcopy
+from itertools import chain
+from torch.utils.data import DataLoader, TensorDataset
+from torch import nn
+
+from mantis import Mantis
+
+from .trainer_utils.architecture import FineTuningNetwork
+from .trainer_utils.dataset import LabeledDataset
+from .trainer_utils.scheduling import adjust_learning_rate
+
+
+class MantisTrainer:
+    def __init__(self, device, network=None):
+        self.device = device
+        if network is None:
+            network = Mantis(seq_len=512, hidden_dim=256, num_patches=32, scalar_scales=None, hidden_dim_scalar_enc=32, 
+                             epsilon_scalar_enc=1.1, transf_depth=6, transf_num_heads=8, transf_mlp_dim=512, transf_dim_head=128, 
+                             transf_dropout=0.1, device='cuda:0', pre_training=False)
+        self.network = network.to(device)
+
+    def fit(self, x, y, fine_tuning_type='full', adapter=None, mlp_head=None, num_epochs=500, batch_size=256, base_learning_rate=2e-4, 
+            init_optimizer=None, criterion=None, learning_rate_adjusting=True):
+        self.fine_tuning_type = fine_tuning_type
+        # get the whole fine-tuning architecture
+        ## init mlp_head
+        if mlp_head is None:
+            mlp_head = torch.nn.Sequential(
+                                    torch.nn.LayerNorm(self.network.hidden_dim * x.shape[1]),
+                                    torch.nn.Linear(self.network.hidden_dim * x.shape[1], np.unique(y).shape[0])
+                                ).to(self.device)
+        else:
+            mlp_head = mlp_head.to(self.device)
+        ## init adapter
+        if adapter is not None:
+            adapter = adapter.to(self.device)
+        else:
+            adapter = None
+        ## when fine-tuning only the head, the forward pass over the encoder will be done only once (see init data_loader below)
+        if fine_tuning_type == 'head':
+            self.fine_tuned_model = FineTuningNetwork(encoder=None, head=mlp_head, adapter=None).to(self.device)
+        else:
+            self.fine_tuned_model = FineTuningNetwork(deepcopy(self.network), mlp_head, adapter).to(self.device)
+        
+        # get params to fine-tune and set them into the training model
+        parameters = self._get_fine_tuning_params(fine_tuning_type=fine_tuning_type)
+        self.fine_tuned_model.eval()
+        self._set_train(fine_tuning_type=fine_tuning_type)
+
+        # init criterion if None
+        if criterion is None:
+            criterion = torch.nn.CrossEntropyLoss()
+
+        # init optimizer by init_optimizer
+        if init_optimizer is None:
+            optimizer = torch.optim.AdamW(parameters, lr=base_learning_rate, betas=(0.9, 0.999), weight_decay=0.05)
+        else:
+            optimizer = init_optimizer(parameters)
+
+        # init dataloader, for the head fine-tuning we directly load the embeddings
+        if fine_tuning_type == 'head':
+            train_dataset = LabeledDataset(self.transform(x), y)
+        else:
+            train_dataset = LabeledDataset(x, y)
+        data_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+
+        # training loop
+        progress_bar = tqdm(range(num_epochs))
+        step = 1
+        for epoch in progress_bar:
+            loss_list = []
+            for (x_batch, y_batch) in data_loader:
+                # adjust learning rate
+                if learning_rate_adjusting:
+                    adjust_learning_rate(num_epochs, optimizer, data_loader, step, base_learning_rate, batch_size)
+                # read data
+                x_batch, y_batch = x_batch.to(self.device), y_batch.to(self.device)
+                step += 1
+                # forward
+                output = self.fine_tuned_model(x_batch)
+                loss = criterion(output, y_batch)
+                # backward
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+                loss_list.append(loss.item())
+            # report average loss over all batches
+            avg_loss_in_epoch = np.mean(loss_list)
+            progress_bar.set_description("Epoch {:d}: Train Loss {:.4f}".format(epoch, avg_loss_in_epoch), refresh=True)                
+        return self.fine_tuned_model
+
+    def transform(self, x, batch_size=256, three_dim=False):
+        # apply network to each channel
+        if three_dim:
+            return np.concatenate([
+                self._transform(x[:, [i], :], batch_size=batch_size)[:, None, :] 
+                for i in range(x.shape[1])
+                ], axis=1)
+        else:
+            return np.concatenate([
+                self._transform(x[:, [i], :], batch_size=batch_size) 
+                for i in range(x.shape[1])
+                ], axis=1)
+    
+    def _transform(self, x, batch_size=256):
+        self.network.eval()
+        dataloader = self._prepare_dataloader_for_inference(x, batch_size)
+        outs = []
+        for _, batch in enumerate(dataloader):
+            x = batch[0].to(self.device)
+            with torch.no_grad():
+                out = self.network(x)
+            outs.append(out)
+        outs = torch.cat(outs)
+        self.network.train()
+        return outs.cpu().numpy()
+    
+    def predict_proba(self, x, batch_size=256):
+        self.fine_tuned_model.eval()
+        dataloader = self._prepare_dataloader_for_inference(x, batch_size)
+        outs = []
+        for _, batch in enumerate(dataloader):
+            x = batch[0].to(self.device)
+            with torch.no_grad():
+                if self.fine_tuning_type == 'head':
+                    out = torch.softmax(self.fine_tuned_model.head(self.network(x)), dim=-1)
+                else:
+                    out = torch.softmax(self.fine_tuned_model(x), dim=-1)
+            outs.append(out.cpu())
+        outs = torch.cat(outs)
+        return outs.cpu().numpy()
+    
+    def predict(self, x, batch_size=256):
+        probs = self.predict_proba(x, batch_size=batch_size)
+        return probs.argmax(axis=1)
+
+    def _prepare_dataloader_for_inference(self, x, batch_size):
+        if type(x) == torch.Tensor:
+            dataset = TensorDataset(x.type(torch.float))
+        else:
+            dataset = TensorDataset(torch.tensor(x, dtype=torch.float))
+        return DataLoader(dataset, batch_size=batch_size, shuffle=False)
+    
+    def __repr__(self):
+        return f"{self.__class__.__name__}({', '.join(f'{k}={v}' for k, v in vars(self).items() if k not in ['network', 'training_args'])})"
+    
+    def _get_fine_tuning_params(self, fine_tuning_type):
+        tune_params_dict = {
+            "full": [
+                self.fine_tuned_model.parameters()
+            ],
+            "scratch": [
+                self.fine_tuned_model.parameters()
+            ],
+            "head": [
+                self.fine_tuned_model.head.parameters()
+            ],
+            "adapter_head": [
+                [] if self.fine_tuned_model.adapter is None else self.fine_tuned_model.adapter.parameters(),
+                self.fine_tuned_model.head.parameters()
+            ]
+        }
+        params_list = list(chain(*tune_params_dict[fine_tuning_type]))
+        return params_list
+    
+    def _set_train(self, fine_tuning_type):
+        if fine_tuning_type in ["full", "scratch"]:
+            self.fine_tuned_model.train()
+        elif fine_tuning_type == "head":
+            self.fine_tuned_model.head.train()
+        elif fine_tuning_type == "adapter_head":
+            self.fine_tuned_model.adapter.train()
+            self.fine_tuned_model.head.train()
+        else:
+            raise KeyError("Unknown fine_tuning_type")
