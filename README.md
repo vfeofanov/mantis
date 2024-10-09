@@ -1,1 +1,1 @@
-# Mantis: Lightweight Foundation Model with Adapters for Multivariate Time Series Classification
+# Mantis: Foundation Model with Adapters for Multichannel Time Series Classification
