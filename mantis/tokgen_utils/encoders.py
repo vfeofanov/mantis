@@ -3,13 +3,13 @@ import torch
 from torch import nn
 
 
-class LinearEncoder(nn.Module):    
+class LinearEncoder(nn.Module):
     def __init__(self, input_dim, output_dim):
         super(LinearEncoder, self).__init__()
         self.linear = nn.Linear(input_dim, output_dim)
         self.layer_norm = nn.LayerNorm(normalized_shape=output_dim, eps=1e-15)
-        
-    def forward(self,x):
+
+    def forward(self, x):
         return self.layer_norm(self.linear(x))
 
 
@@ -17,13 +17,13 @@ class ScalarEncoder(nn.Module):
     def __init__(self, k, hidden_dim):
         '''
         '''
-        super(ScalarEncoder,self).__init__()
+        super(ScalarEncoder, self).__init__()
         self.w = torch.nn.Parameter(torch.rand((1, hidden_dim), dtype=torch.float, requires_grad=True))
         self.b = torch.nn.Parameter(torch.rand((1, hidden_dim), dtype=torch.float, requires_grad=True))
         self.k = k
         self.layer_norm = torch.nn.LayerNorm(normalized_shape=hidden_dim, eps=1e-15)
-    
-    def forward(self,x):
+
+    def forward(self, x):
         '''
         '''
         z = x * self.w + self.k * self.b
@@ -51,5 +51,5 @@ class MultiScaledScalarEncoder(nn.Module):
         alpha = torch.unsqueeze(alpha, dim=-1)
         y = [encoder(x) for encoder in self.encoders]
         y = torch.stack(y, dim=-2)
-        y = torch.sum(y * alpha, dim=-2)       
+        y = torch.sum(y * alpha, dim=-2)
         return y
