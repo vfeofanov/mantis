@@ -15,9 +15,9 @@ jobs:
       #fail-fast: false
       matrix:
         os: 
+          - ubuntu-24.04
           - ubuntu-22.04   # Recent Ubuntu versions
           - ubuntu-20.04
-          - ubuntu-18.04
         python-version: ["3.8", "3.9", "3.10", "3.11"]
         
     runs-on: ${{ matrix.os }}
