@@ -18,8 +18,9 @@ jobs:
           #- ubuntu-24.04
           #- ubuntu-22.04   # Recent Ubuntu versions
           #- ubuntu-20.04
-          - windows-2022
-          - windows-2019   # Recent Ubuntu versions
+          #- windows-2022
+          #- windows-2019   # Recent Ubuntu versions
+          - macos-12
         python-version: ["3.8", "3.9", "3.10", "3.11"]
         
     runs-on: ${{ matrix.os }}
@@ -35,7 +36,13 @@ jobs:
           python -m pip install flake8 pytest
           
           # Conditional installation of requirements.txt
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ "${{ matrix.os }}" == "macos-12" ]; then
+            pip install "numpy<2"
+          fi
+
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
         if: startsWith(matrix.os, 'ubuntu') || startsWith(matrix.os, 'macos')  # Only runs on Ubuntu and macOS
 
       - name: Install dependencies (Windows)
