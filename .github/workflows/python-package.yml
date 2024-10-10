@@ -18,8 +18,8 @@ jobs:
           #- ubuntu-24.04
           #- ubuntu-22.04   # Recent Ubuntu versions
           #- ubuntu-20.04
-          - macos-15
-          - macos-14   # Recent Ubuntu versions
+          - windows-2022
+          - windows-2019   # Recent Ubuntu versions
         python-version: ["3.8", "3.9", "3.10", "3.11"]
         
     runs-on: ${{ matrix.os }}
