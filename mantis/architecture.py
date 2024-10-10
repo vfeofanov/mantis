@@ -10,13 +10,13 @@ from .vit_utils.positional_encoding import PositionalEncoding
 from .vit_utils.transformer import Transformer
 
 
-##############################
-##       Organization:      ##
-##############################
-## class TokenGeneratorUnit ##
-## class ViTUnit            ##
-## class Mantis             ##
-##############################
+# ==============================
+# ==       Organization:      ==
+# ==============================
+# == class TokenGeneratorUnit ==
+# == class ViTUnit            ==
+# == class Mantis             ==
+# ==============================
 
 
 class TokenGeneratorUnit(nn.Module):
@@ -24,31 +24,36 @@ class TokenGeneratorUnit(nn.Module):
         super().__init__()
         self.num_patches = num_patches
         # token generator for time series objects
-        num_ts_feats = 2 # original ts + its diff
-        kernel_size = patch_window_size + 1 if patch_window_size % 2 == 0 else patch_window_size
+        num_ts_feats = 2  # original ts + its diff
+        kernel_size = patch_window_size + \
+            1 if patch_window_size % 2 == 0 else patch_window_size
         self.convs = nn.ModuleList([
-            Convolution(kernel_size=kernel_size, out_channels=hidden_dim, dilation=1) 
+            Convolution(kernel_size=kernel_size,
+                        out_channels=hidden_dim, dilation=1)
             for i in range(num_ts_feats)
         ])
         self.layer_norms = nn.ModuleList([
             nn.LayerNorm(normalized_shape=hidden_dim, eps=1e-5)
             for i in range(num_ts_feats)
         ])
-        
+
         # token generator for scalar statistics
         if scalar_scales is None:
             scalar_scales = [1e-4, 1e-3, 1e-2, 1e-1, 1, 1e1, 1e2, 1e3, 1e4]
-        num_scalar_stats = 2 # mean + std
+        num_scalar_stats = 2  # mean + std
         self.scalar_encoders = nn.ModuleList([
-            MultiScaledScalarEncoder(scalar_scales, hidden_dim_scalar_enc, epsilon_scalar_enc) 
+            MultiScaledScalarEncoder(
+                scalar_scales, hidden_dim_scalar_enc, epsilon_scalar_enc)
             for i in range(num_scalar_stats)
         ])
 
         # final token projector
-        self.linear_encoder = LinearEncoder(hidden_dim_scalar_enc * num_scalar_stats + hidden_dim * (num_ts_feats), hidden_dim)
+        self.linear_encoder = LinearEncoder(
+            hidden_dim_scalar_enc * num_scalar_stats + hidden_dim * (num_ts_feats), hidden_dim)
 
         # scales each time-series w.r.t. its mean and std
-        self.ts_scaler = lambda x: (x - torch.mean(x, axis=2, keepdim=True)) / (torch.std(x, axis=2, keepdim=True) + 1e-5)
+        self.ts_scaler = lambda x: (
+            x - torch.mean(x, axis=2, keepdim=True)) / (torch.std(x, axis=2, keepdim=True) + 1e-5)
 
     def forward(self, x):
         with torch.no_grad():
@@ -59,26 +64,30 @@ class TokenGeneratorUnit(nn.Module):
             statistics = [mean_patched, std_patched]
 
         # for each encoder output is (batch_size, num_sub_ts, hidden_dim_scalar_enc)
-        scalar_embeddings = [self.scalar_encoders[i](statistics[i]) for i in range(len(statistics))]
+        scalar_embeddings = [self.scalar_encoders[i](
+            statistics[i]) for i in range(len(statistics))]
 
         # apply convolution for original ts and its diff
         ts_var_embeddings = []
-        # diff      
+        # diff
         with torch.no_grad():
             diff_x = torch.diff(x, n=1, axis=2)
             # pad by zeros to have same dimensionalities as x
             diff_x = torch.nn.functional.pad(diff_x, (0, 1))
-            embedding = self.convs[0](self.ts_scaler(diff_x))  # dim(bs, hidden_dim, len_ts-patch_window_size-1)
+            # dim(bs, hidden_dim, len_ts-patch_window_size-1)
+            embedding = self.convs[0](self.ts_scaler(diff_x))
             ts_var_embeddings.append(embedding)
         # original ts
-        embedding = self.convs[1](self.ts_scaler(x))  # dim(bs, hidden_dim, len_ts-patch_window_size-1)
+        # dim(bs, hidden_dim, len_ts-patch_window_size-1)
+        embedding = self.convs[1](self.ts_scaler(x))
         ts_var_embeddings.append(embedding)
 
         # split ts_var_embeddings into patches
         patched_ts_var_embeddings = []
         for i, embedding in enumerate(ts_var_embeddings):
             embedding = self.layer_norms[i](embedding)
-            embedding = embedding.reshape(embedding.shape[0], self.num_patches, -1, embedding.shape[2])
+            embedding = embedding.reshape(
+                embedding.shape[0], self.num_patches, -1, embedding.shape[2])
             embedding = torch.mean(embedding, dim=2)
             patched_ts_var_embeddings.append(embedding)
 
@@ -86,24 +95,27 @@ class TokenGeneratorUnit(nn.Module):
         x_embeddings = torch.cat([
             torch.cat(patched_ts_var_embeddings, dim=-1),
             torch.cat(scalar_embeddings, dim=-1)
-            ], dim=-1)
+        ], dim=-1)
         x_embeddings = self.linear_encoder(x_embeddings)
 
         return x_embeddings
 
 
 class ViTUnit(nn.Module):
-    def __init__(self, hidden_dim, num_patches, depth, heads, mlp_dim, dim_head, dropout, device):                 
+    def __init__(self, hidden_dim, num_patches, depth, heads, mlp_dim, dim_head, dropout, device):
         super().__init__()
-        self.pos_encoder = PositionalEncoding(d_model=hidden_dim, dropout=dropout, max_len=num_patches+1)
+        self.pos_encoder = PositionalEncoding(
+            d_model=hidden_dim, dropout=dropout, max_len=num_patches+1)
         self.cls_token = nn.Parameter(torch.randn(hidden_dim).to(device))
-        self.transformer = Transformer(hidden_dim, depth, heads, dim_head, mlp_dim, dropout)
+        self.transformer = Transformer(
+            hidden_dim, depth, heads, dim_head, mlp_dim, dropout)
 
     def forward(self, x):
         b, n, _ = x.shape
         cls_tokens = repeat(self.cls_token, 'd -> b d', b=b)
         x_embeddings, ps = pack([cls_tokens, x], 'b * d')
-        x_embeddings = self.pos_encoder(x_embeddings.transpose(0, 1)).transpose(0, 1)
+        x_embeddings = self.pos_encoder(
+            x_embeddings.transpose(0, 1)).transpose(0, 1)
         x_embeddings = self.transformer(x_embeddings)
         cls_tokens, _ = unpack(x_embeddings, ps, 'b * d')
         return cls_tokens.reshape(cls_tokens.shape[0], -1)
@@ -120,7 +132,7 @@ class Mantis(
     tags=["time-series-foundation-model"],
 ):
     def __init__(self, seq_len=512, hidden_dim=256, num_patches=32, scalar_scales=None, hidden_dim_scalar_enc=32, epsilon_scalar_enc=1.1,
-                 transf_depth=6, transf_num_heads=8, transf_mlp_dim=512, transf_dim_head=128, transf_dropout=0.1, device='cuda:0', 
+                 transf_depth=6, transf_num_heads=8, transf_mlp_dim=512, transf_dim_head=128, transf_dropout=0.1, device='cuda:0',
                  pre_training=False):
         '''
         The architecture of Mantis foundation model.
@@ -141,7 +153,8 @@ class Mantis(
         '''
 
         super().__init__()
-        assert (seq_len % num_patches) == 0, print('Seq_len must be the multiple of num_patches')
+        assert (seq_len % num_patches) == 0, print(
+            'Seq_len must be the multiple of num_patches')
         patch_window_size = int(seq_len / num_patches)
 
         self.hidden_dim = hidden_dim
@@ -157,18 +170,18 @@ class Mantis(
                                               epsilon_scalar_enc=epsilon_scalar_enc)
         self.vit_unit = ViTUnit(hidden_dim=hidden_dim, num_patches=num_patches, depth=transf_depth, heads=transf_num_heads,
                                 mlp_dim=transf_mlp_dim, dim_head=transf_dim_head, dropout=transf_dropout, device=device)
-        
+
         self.prj = nn.Sequential(
-           nn.LayerNorm(self.hidden_dim),
-           nn.Linear(self.hidden_dim, self.hidden_dim)
+            nn.LayerNorm(self.hidden_dim),
+            nn.Linear(self.hidden_dim, self.hidden_dim)
         )
 
         self.to(device)
-    
+
     def to(self, device):
         self.device = device
         return super().to(device)
-    
+
     def forward(self, x):
         x_embeddings = self.tokgen_unit(x)
         vit_out = self.vit_unit(x_embeddings)
