@@ -43,7 +43,7 @@ if __name__ == '__main__':
         gpu_id = int(device.split(':')[1])
         torch.cuda.set_device(gpu_id)
         device = torch.device('cuda', gpu_id)
-    
+
     # ==== read data ====
     # your X_train and X_test should be of the shape (n_samples, 1, seq_len=512)
     # if original sequence length is different, resize it, for example, using the following function:
@@ -55,7 +55,7 @@ if __name__ == '__main__':
     if fine_tuning_type != 'scratch':
         network = network.from_pretrained("paris-noah/Mantis-8M")
     model = MantisTrainer(device=device, network=network)
-    
+
     # ==== extract deep features, then random forest ====:
     if fine_tuning_type == 'rf':
         # get deep features
@@ -63,7 +63,8 @@ if __name__ == '__main__':
         Z_test = model.transform(X_test)
         # train a classifier
         from sklearn.ensemble import RandomForestClassifier
-        predictor = RandomForestClassifier(n_estimators=200, n_jobs=-1, random_state=0)
+        predictor = RandomForestClassifier(
+            n_estimators=200, n_jobs=-1, random_state=0)
         predictor.fit(Z_train, y_train)
         # evaluate the performance
         y_pred = predictor.predict(Z_test)
@@ -71,9 +72,11 @@ if __name__ == '__main__':
     # ==== using fit function of MantisTrainer ====
     else:
         # initialize some training parameters
-        init_optimizer = lambda params: torch.optim.AdamW(params, lr=2e-4, betas=(0.9, 0.999), weight_decay=0.05)
+        def init_optimizer(params): return torch.optim.AdamW(
+            params, lr=2e-4, betas=(0.9, 0.999), weight_decay=0.05)
         # fine-tune the model
-        model.fit(X_train, y_train, num_epochs=100, fine_tuning_type=fine_tuning_type, init_optimizer=init_optimizer)
+        model.fit(X_train, y_train, num_epochs=100,
+                  fine_tuning_type=fine_tuning_type, init_optimizer=init_optimizer)
         # evaluate the performance
         y_pred = model.predict(X_test)
         print(f'Accuracy on the test set is {np.mean(y_test == y_pred)}')
