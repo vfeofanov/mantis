@@ -31,7 +31,10 @@ def read_GestureMidAirD1():
 if __name__ == '__main__':
     # parse arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument("--fine_tuning_type", type=str, default='rf', help='rf: use FM to extract features, then learn RF on them, head: fine-tune a linear head, full: fine-tune the whole model, scratch: same as full fine-tuning, but pre-trained model weights are not loaded.')
+    parser.add_argument("--fine_tuning_type", type=str, default='rf', help='rf: use FM to extract features, then learn RF on them, \
+                                                                            head: fine-tune a linear head, \
+                                                                            full: fine-tune the whole model, \
+                                                                            scratch: same as full fine-tuning, but pre-trained model weights are not loaded.')
     parser.add_argument("--device", type=str, default='cuda', help='Device')
     args = parser.parse_args()
     fine_tuning_type = args.fine_tuning_type
@@ -41,19 +44,19 @@ if __name__ == '__main__':
         torch.cuda.set_device(gpu_id)
         device = torch.device('cuda', gpu_id)
     
-    # read data
-    ## your X_train and X_test should be of the shape (n_samples, 1, seq_len=512)
-    ## if original sequence length is different, resize it, for example, using the following function:
-    ## F.interpolate(X, size=512, mode='linear', align_corners=False)
+    # ==== read data ====
+    # your X_train and X_test should be of the shape (n_samples, 1, seq_len=512)
+    # if original sequence length is different, resize it, for example, using the following function:
+    # F.interpolate(X, size=512, mode='linear', align_corners=False)
     X_train, X_test, y_train, y_test = read_GestureMidAirD1()
 
-    # init the model, load the weights
+    # ==== init the model, load the weights ====
     network = Mantis(device=device)
     if fine_tuning_type != 'scratch':
         network = network.from_pretrained("paris-noah/Mantis-8M")
     model = MantisTrainer(device=device, network=network)
-
-    # when you want to just extract deep features and apply your favorite classifier, you can do like this:
+    
+    # ==== extract deep features, then random forest ====:
     if fine_tuning_type == 'rf':
         # get deep features
         Z_train = model.transform(X_train)
@@ -65,7 +68,7 @@ if __name__ == '__main__':
         # evaluate the performance
         y_pred = predictor.predict(Z_test)
         print(f'Accuracy on the test set is {np.mean(y_test == y_pred)}')
-    # procedure for fine-tuning
+    # ==== using fit function of MantisTrainer ====
     else:
         # initialize some training parameters
         init_optimizer = lambda params: torch.optim.AdamW(params, lr=2e-4, betas=(0.9, 0.999), weight_decay=0.05)
