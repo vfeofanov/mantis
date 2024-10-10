@@ -3,6 +3,6 @@ huggingface_hub
 numpy
 pandas
 scikit_learn
-setuptool
+setuptools
 torch
 tqdm
