@@ -16,26 +16,74 @@ from .trainer_utils.scheduling import adjust_learning_rate
 
 class MantisTrainer:
     def __init__(self, device, network=None):
+        """
+        A scikit-learn-like class to use Mantis as a feature extractor or fine-tune it to the downstream task.
+        Parameters
+        ----------
+        device: either cpu or cuda
+        network: if None, the class initializes a Mantis object by itself (so weights are randomly initialized).
+        Otherwise, pass a pre-trained model.
+        """
         self.device = device
         if network is None:
             network = Mantis(seq_len=512, hidden_dim=256, num_patches=32, scalar_scales=None, hidden_dim_scalar_enc=32,
                              epsilon_scalar_enc=1.1, transf_depth=6, transf_num_heads=8, transf_mlp_dim=512,
-                             transf_dim_head=128, transf_dropout=0.1, device='cuda:0', pre_training=False)
+                             transf_dim_head=128, transf_dropout=0.1, device=device, pre_training=False)
         self.network = network.to(device)
 
-    def fit(self, x, y, fine_tuning_type='full', adapter=None, mlp_head=None, num_epochs=500, batch_size=256,
+    def fit(self, x, y, fine_tuning_type='full', adapter=None, head=None, num_epochs=500, batch_size=256,
             base_learning_rate=2e-4, init_optimizer=None, criterion=None, learning_rate_adjusting=True):
+        """
+
+        Parameters
+        ----------
+        x: array-like of shape (n_samples, n_channels, seq_len)
+            The input samples. If data is univariate case, the shape should be (n_samples, 1, seq_len).
+            ``seq_len`` should correspond to ``self.network.seq_len``.
+        y: array-like of shape (n_samples,)
+            The class labels with the following unique_values: ``[i for i in range(n_classes)]``
+        fine_tuning_type: {'full', 'adapter_head', 'head', 'scratch'}, default='full'
+            fine-tuning type
+        adapter: nn.Module, default=None
+            Adapter is a part of the network that precedes the foundation model and reduces the original data matrix
+            of shape (n_samples, n_channels, seq_len) to (n_samples, new_n_channels, seq_len). By default, adapter
+            is not used.
+        head: nn.Module, default=None
+            Head is a part of the network that follows the foundation model and projects from the embedding space
+            to the probability matrix of shape (n_samples, n_classes). By default, head is a linear layer ``Linear``
+            preceded by the layer normalization ``LayerNorm``.
+        num_epochs: int, default=500
+            Number of training epochs.
+        batch_size: int, default=256
+            Batch size.
+        base_learning_rate: float, default=2e-4
+            Learning rate that optimizer starts from. If learning_rate_adjusting is False, 
+            it remains to be fixed
+        init_optimizer: callable, default=None
+            Function that initializes the optimizer. By default, ``AdamW`` 
+            with pre-defined hyperparameters (except the learning rate) is used.
+        criterion: nn.Module, default=None
+            Learning criterion. By default, ``CrossEntropyLoss`` is used. 
+        learning_rate_adjusting: bool, default=True
+            Whether to use the implemented scheduling scheme.
+
+        Returns
+        -------
+        self.fine_tuned_model: nn.Module
+            Network fine-tuned to the downstream task.
+        """
+        
         self.fine_tuning_type = fine_tuning_type
         # ==== get the whole fine-tuning architecture ====
-        # init mlp_head
-        if mlp_head is None:
-            mlp_head = nn.Sequential(
+        # init head
+        if head is None:
+            head = nn.Sequential(
                 nn.LayerNorm(self.network.hidden_dim * x.shape[1]),
                 nn.Linear(self.network.hidden_dim *
                           x.shape[1], np.unique(y).shape[0])
             ).to(self.device)
         else:
-            mlp_head = mlp_head.to(self.device)
+            head = head.to(self.device)
         # init adapter
         if adapter is not None:
             adapter = adapter.to(self.device)
@@ -44,10 +92,10 @@ class MantisTrainer:
         # when fine-tuning head, the forward pass over the encoder will be done only once (see init data_loader below)
         if fine_tuning_type == 'head':
             self.fine_tuned_model = FineTuningNetwork(
-                encoder=None, head=mlp_head, adapter=None).to(self.device)
+                encoder=None, head=head, adapter=None).to(self.device)
         else:
             self.fine_tuned_model = FineTuningNetwork(
-                deepcopy(self.network), mlp_head, adapter).to(self.device)
+                deepcopy(self.network), head, adapter).to(self.device)
 
         # ==== get params to fine-tune and set them into the training model ====
         parameters = self._get_fine_tuning_params(
@@ -104,6 +152,28 @@ class MantisTrainer:
         return self.fine_tuned_model
 
     def transform(self, x, batch_size=256, three_dim=False):
+        """
+        Projects to the embedding space using self.network.
+
+        Parameters
+        ----------
+        x: array-like of shape (n_samples, n_channels, seq_len)
+            The input samples. If data is univariate case, the shape should be (n_samples, 1, seq_len).
+            ``seq_len`` should correspond to ``self.network.seq_len``. In the multivariate case, each channel is sent
+            independently to the foundation model.
+        batch_size: int, default=256
+            To fit memory, the data matrix is split into the chunks for inference. ``batch_size`` corresponds to
+            the chunk size.
+        three_dim: bool, default=False
+            Whether the output should be two- or three-dimensional. By default, the embeddings of all channels are
+            concatenated along the same axis, so the output is of shape (n_samples, n_channels * hidden_dim). When
+            three_dim is set to True, the output is of shape (n_samples, n_channels, hidden_dim).
+
+        Returns
+        -------
+        z: array-like of shape (n_samples, n_channels * hidden_dim) or (n_samples, n_channels, hidden_dim)
+            Embeddings.
+        """
         # apply network to each channel
         if three_dim:
             return np.concatenate([
@@ -131,6 +201,24 @@ class MantisTrainer:
         return outs.cpu().numpy()
 
     def predict_proba(self, x, batch_size=256):
+        """
+        Predicts the class probability matrix using self.fine_tuned_model.
+
+        Parameters
+        ----------
+        x: array-like of shape (n_samples, n_channels, seq_len)
+            The input samples. If data is univariate case, the shape should be (n_samples, 1, seq_len).
+            ``seq_len`` should correspond to ``self.network.seq_len``.
+        batch_size: int, default=256
+            To fit memory, the data matrix is split into the chunks for inference. ``batch_size`` corresponds to
+            the chunk size.
+
+        Returns
+        -------
+        probs: array_like of shape (n_samples, n_classes)
+            Class probability matrix.
+        """
+
         self.fine_tuned_model.eval()
         dataloader = self._prepare_dataloader_for_inference(x, batch_size)
         outs = []
@@ -147,6 +235,23 @@ class MantisTrainer:
         return outs.cpu().numpy()
 
     def predict(self, x, batch_size=256):
+        """
+        Predicts the class labels using self.fine_tuned_model.
+
+        Parameters
+        ----------
+        x: array-like of shape (n_samples, n_channels, seq_len)
+            The input samples. If data is univariate case, the shape should be (n_samples, 1, seq_len).
+            ``seq_len`` should correspond to ``self.network.seq_len``.
+        batch_size: int, default=256
+            To fit memory, the data matrix is split into the chunks for inference. ``batch_size`` corresponds to
+            the chunk size.
+
+        Returns
+        -------
+        y: array_like of shape (n_samples,)
+            Class labels.
+        """
         probs = self.predict_proba(x, batch_size=batch_size)
         return probs.argmax(axis=1)
 
@@ -158,7 +263,8 @@ class MantisTrainer:
         return DataLoader(dataset, batch_size=batch_size, shuffle=False)
 
     def __repr__(self):
-        return f"{self.__class__.__name__}({', '.join(f'{k}={v}' for k, v in vars(self).items() if k not in ['network', 'training_args'])})"
+        class_name = self.__class__.__name__
+        return f"{class_name}({', '.join(f'{k}={v}' for k, v in vars(self).items() if k not in ['network'])})"
 
     def _get_fine_tuning_params(self, fine_tuning_type):
         tune_params_dict = {
