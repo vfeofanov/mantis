@@ -6,3 +6,4 @@ scikit_learn
 setuptools
 torch
 tqdm
+packaging
