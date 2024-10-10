@@ -12,7 +12,7 @@ class PreNorm(nn.Module):
 
     def forward(self, x, **kwargs):
         return self.fn(self.norm(x), **kwargs)
-    
+
 
 class FeedForward(nn.Module):
     def __init__(self, dim, hidden_dim, dropout=0.):
@@ -51,14 +51,11 @@ class Attention(nn.Module):
     def forward(self, x):
         qkv = self.to_qkv(x).chunk(3, dim=-1)
         q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> b h n d', h=self.heads), qkv)
-
         dots = torch.matmul(q, k.transpose(-1, -2)) * self.scale
 
         attn = self.attend(dots)
-        assert torch.sum(torch.isnan(attn))==0,print("attn")
-        assert torch.sum(torch.isinf(attn))==0,print("attn inf")
         attn = self.dropout(attn)
-
+        
         out = torch.matmul(attn, v)
         out = rearrange(out, 'b h n d -> b n (h d)')
         return self.to_out(out)
@@ -77,7 +74,5 @@ class Transformer(nn.Module):
     def forward(self, x):
         for attn, ff in self.layers:
             x = attn(x) + x
-            assert torch.sum(torch.isnan(x))==0,print("x_attn")
-            assert torch.sum(torch.isinf(x))==0,print("x_attn inf")
             x = ff(x) + x
         return x
