@@ -31,10 +31,13 @@ def read_GestureMidAirD1():
 if __name__ == '__main__':
     # parse arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument("--fine_tuning_type", type=str, default='rf', help='rf: use FM to extract features, then learn RF on them, \
-                                                                            head: fine-tune a linear head, \
-                                                                            full: fine-tune the whole model, \
-                                                                            scratch: same as full fine-tuning, but pre-trained model weights are not loaded.')
+    parser.add_argument("--fine_tuning_type",
+                        type=str,
+                        default='rf',
+                        help='rf: use FM to extract features, then learn RF on them, \
+                              head: fine-tune a linear head, \
+                              full: fine-tune the whole model, \
+                              scratch: same as full fine-tuning, but pre-trained model weights are not loaded.')
     parser.add_argument("--device", type=str, default='cuda', help='Device')
     args = parser.parse_args()
     fine_tuning_type = args.fine_tuning_type
