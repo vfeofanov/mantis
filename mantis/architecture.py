@@ -20,7 +20,8 @@ from .vit_utils.transformer import Transformer
 
 
 class TokenGeneratorUnit(nn.Module):
-    def __init__(self, hidden_dim, num_patches, patch_window_size, scalar_scales, hidden_dim_scalar_enc, epsilon_scalar_enc):
+    def __init__(self, hidden_dim, num_patches, patch_window_size, scalar_scales, hidden_dim_scalar_enc,
+                 epsilon_scalar_enc):
         super().__init__()
         self.num_patches = num_patches
         # token generator for time series objects
@@ -131,15 +132,16 @@ class Mantis(
     license="mit",
     tags=["time-series-foundation-model"],
 ):
-    def __init__(self, seq_len=512, hidden_dim=256, num_patches=32, scalar_scales=None, hidden_dim_scalar_enc=32, epsilon_scalar_enc=1.1,
-                 transf_depth=6, transf_num_heads=8, transf_mlp_dim=512, transf_dim_head=128, transf_dropout=0.1, device='cuda:0',
-                 pre_training=False):
-        '''
+    def __init__(self, seq_len=512, hidden_dim=256, num_patches=32, scalar_scales=None, hidden_dim_scalar_enc=32,
+                 epsilon_scalar_enc=1.1, transf_depth=6, transf_num_heads=8, transf_mlp_dim=512, transf_dim_head=128,
+                 transf_dropout=0.1, device='cuda:0', pre_training=False):
+        """
         The architecture of Mantis foundation model.
-        params:
+        Parameters
+        ----------
         seq_len: length of time series
-        num_patches: number of patches
         hidden_dim: size of a token, i.e., what is the hidden dimension each patch is projected to
+        num_patches: number of patches
         scalar_scales: list of scales used for MultiScaledScalarEncoder in TokenGeneratorUnit
         hidden_dim_scalar_enc: hidden dimension used for MultiScaledScalarEncoder in TokenGeneratorUnit
         epsilon_scalar_enc: esplilon used for MultiScaledScalarEncoder in TokenGeneratorUnit
@@ -149,8 +151,9 @@ class Mantis(
         transf_dim_head: q,k,v dim used for Transformer in ViTUnit
         transf_dropout: dropout value used for Transformer in ViTUnit
         device: device
-        pre_training: if True, applies a MLP projector after the ViTUnit, which originally was used to pre-train the model using InfoNCE contrastive loss.
-        '''
+        pre_training: if True, applies a MLP projector after the ViTUnit, which originally was used to pre-train
+        the model using InfoNCE contrastive loss.
+        """
 
         super().__init__()
         assert (seq_len % num_patches) == 0, print(
@@ -165,11 +168,15 @@ class Mantis(
         self.seq_len = seq_len
         self.pre_training = pre_training
 
-        self.tokgen_unit = TokenGeneratorUnit(hidden_dim=hidden_dim, num_patches=num_patches, patch_window_size=patch_window_size,
-                                              scalar_scales=scalar_scales, hidden_dim_scalar_enc=hidden_dim_scalar_enc,
+        self.tokgen_unit = TokenGeneratorUnit(hidden_dim=hidden_dim,
+                                              num_patches=num_patches,
+                                              patch_window_size=patch_window_size,
+                                              scalar_scales=scalar_scales,
+                                              hidden_dim_scalar_enc=hidden_dim_scalar_enc,
                                               epsilon_scalar_enc=epsilon_scalar_enc)
-        self.vit_unit = ViTUnit(hidden_dim=hidden_dim, num_patches=num_patches, depth=transf_depth, heads=transf_num_heads,
-                                mlp_dim=transf_mlp_dim, dim_head=transf_dim_head, dropout=transf_dropout, device=device)
+        self.vit_unit = ViTUnit(hidden_dim=hidden_dim, num_patches=num_patches, depth=transf_depth,
+                                heads=transf_num_heads, mlp_dim=transf_mlp_dim, dim_head=transf_dim_head,
+                                dropout=transf_dropout, device=device)
 
         self.prj = nn.Sequential(
             nn.LayerNorm(self.hidden_dim),
