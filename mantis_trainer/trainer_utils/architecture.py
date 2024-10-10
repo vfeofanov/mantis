@@ -22,4 +22,6 @@ class FineTuningNetwork(nn.Module):
                 return self.head(self.encoder(x))
         else:
             adapter_output = self.adapter(x)
-            return self.head(torch.cat([self.encoder(adapter_output[:, [i], :]) for i in range(adapter_output.shape[1])], dim=-1))
+            return self.head(torch.cat([
+                self.encoder(adapter_output[:, [i], :]) for i in range(adapter_output.shape[1])
+            ], dim=-1))
