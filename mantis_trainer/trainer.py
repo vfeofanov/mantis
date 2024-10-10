@@ -2,7 +2,7 @@ import torch
 import numpy as np
 
 from tqdm import tqdm
-from copy import copy, deepcopy
+from copy import deepcopy
 from itertools import chain
 from torch.utils.data import DataLoader, TensorDataset
 from torch import nn
@@ -18,42 +18,43 @@ class MantisTrainer:
     def __init__(self, device, network=None):
         self.device = device
         if network is None:
-            network = Mantis(seq_len=512, hidden_dim=256, num_patches=32, scalar_scales=None, hidden_dim_scalar_enc=32, 
-                             epsilon_scalar_enc=1.1, transf_depth=6, transf_num_heads=8, transf_mlp_dim=512, transf_dim_head=128, 
-                             transf_dropout=0.1, device='cuda:0', pre_training=False)
+            network = Mantis(seq_len=512, hidden_dim=256, num_patches=32, scalar_scales=None, hidden_dim_scalar_enc=32,
+                             epsilon_scalar_enc=1.1, transf_depth=6, transf_num_heads=8, transf_mlp_dim=512,
+                             transf_dim_head=128, transf_dropout=0.1, device='cuda:0', pre_training=False)
         self.network = network.to(device)
 
-    def fit(self, x, y, fine_tuning_type='full', adapter=None, mlp_head=None, num_epochs=500, batch_size=256, base_learning_rate=2e-4, 
-            init_optimizer=None, criterion=None, learning_rate_adjusting=True):
+    def fit(self, x, y, fine_tuning_type='full', adapter=None, mlp_head=None, num_epochs=500, batch_size=256, 
+            base_learning_rate=2e-4, init_optimizer=None, criterion=None, learning_rate_adjusting=True):
         self.fine_tuning_type = fine_tuning_type
-        # get the whole fine-tuning architecture
-        ## init mlp_head
+        # ==== get the whole fine-tuning architecture ====
+        # init mlp_head
         if mlp_head is None:
-            mlp_head = torch.nn.Sequential(
-                                    torch.nn.LayerNorm(self.network.hidden_dim * x.shape[1]),
-                                    torch.nn.Linear(self.network.hidden_dim * x.shape[1], np.unique(y).shape[0])
+            mlp_head = nn.Sequential(
+                                    nn.LayerNorm(self.network.hidden_dim * x.shape[1]),
+                                    nn.Linear(self.network.hidden_dim * x.shape[1], np.unique(y).shape[0])
                                 ).to(self.device)
         else:
             mlp_head = mlp_head.to(self.device)
-        ## init adapter
+        # init adapter
         if adapter is not None:
             adapter = adapter.to(self.device)
         else:
             adapter = None
-        ## when fine-tuning only the head, the forward pass over the encoder will be done only once (see init data_loader below)
+        # when fine-tuning head, the forward pass over the encoder will be done only once (see init data_loader below)
         if fine_tuning_type == 'head':
             self.fine_tuned_model = FineTuningNetwork(encoder=None, head=mlp_head, adapter=None).to(self.device)
         else:
             self.fine_tuned_model = FineTuningNetwork(deepcopy(self.network), mlp_head, adapter).to(self.device)
-        
-        # get params to fine-tune and set them into the training model
+
+        # ==== get params to fine-tune and set them into the training model ====
         parameters = self._get_fine_tuning_params(fine_tuning_type=fine_tuning_type)
         self.fine_tuned_model.eval()
         self._set_train(fine_tuning_type=fine_tuning_type)
 
+        # ==== init criterion, optimizer and dataloader ====
         # init criterion if None
         if criterion is None:
-            criterion = torch.nn.CrossEntropyLoss()
+            criterion = nn.CrossEntropyLoss()
 
         # init optimizer by init_optimizer
         if init_optimizer is None:
@@ -68,7 +69,7 @@ class MantisTrainer:
             train_dataset = LabeledDataset(x, y)
         data_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
-        # training loop
+        # ==== training loop ====
         progress_bar = tqdm(range(num_epochs))
         step = 1
         for epoch in progress_bar:
@@ -90,19 +91,19 @@ class MantisTrainer:
                 loss_list.append(loss.item())
             # report average loss over all batches
             avg_loss_in_epoch = np.mean(loss_list)
-            progress_bar.set_description("Epoch {:d}: Train Loss {:.4f}".format(epoch, avg_loss_in_epoch), refresh=True)                
+            progress_bar.set_description("Epoch {:d}: Train Loss {:.4f}".format(epoch, avg_loss_in_epoch), refresh=True)
         return self.fine_tuned_model
 
     def transform(self, x, batch_size=256, three_dim=False):
         # apply network to each channel
         if three_dim:
             return np.concatenate([
-                self._transform(x[:, [i], :], batch_size=batch_size)[:, None, :] 
+                self._transform(x[:, [i], :], batch_size=batch_size)[:, None, :]
                 for i in range(x.shape[1])
                 ], axis=1)
         else:
             return np.concatenate([
-                self._transform(x[:, [i], :], batch_size=batch_size) 
+                self._transform(x[:, [i], :], batch_size=batch_size)
                 for i in range(x.shape[1])
                 ], axis=1)
     
@@ -139,7 +140,7 @@ class MantisTrainer:
         return probs.argmax(axis=1)
 
     def _prepare_dataloader_for_inference(self, x, batch_size):
-        if type(x) == torch.Tensor:
+        if isinstance(x, torch.Tensor):
             dataset = TensorDataset(x.type(torch.float))
         else:
             dataset = TensorDataset(torch.tensor(x, dtype=torch.float))
