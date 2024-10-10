@@ -46,10 +46,10 @@ class TokenGeneratorUnit(nn.Module):
 
         # final token projector
         self.linear_encoder = LinearEncoder(hidden_dim_scalar_enc * num_scalar_stats + hidden_dim * (num_ts_feats), hidden_dim)
-        
+
         # scales each time-series w.r.t. its mean and std
         self.ts_scaler = lambda x: (x - torch.mean(x, axis=2, keepdim=True)) / (torch.std(x, axis=2, keepdim=True) + 1e-5)
-    
+
     def forward(self, x):
         with torch.no_grad():
             # compute statistics for each patch
@@ -63,15 +63,15 @@ class TokenGeneratorUnit(nn.Module):
 
         # apply convolution for original ts and its diff
         ts_var_embeddings = []
-        # diff        
-        with torch.no_grad():                
+        # diff      
+        with torch.no_grad():
             diff_x = torch.diff(x, n=1, axis=2)
             # pad by zeros to have same dimensionalities as x
             diff_x = torch.nn.functional.pad(diff_x, (0, 1))
-            embedding = self.convs[0](self.ts_scaler(diff_x)) # dim(bs, hidden_dim, len_ts-patch_window_size-1)
+            embedding = self.convs[0](self.ts_scaler(diff_x))  # dim(bs, hidden_dim, len_ts-patch_window_size-1)
             ts_var_embeddings.append(embedding)
         # original ts
-        embedding = self.convs[1](self.ts_scaler(x)) # dim(bs, hidden_dim, len_ts-patch_window_size-1)
+        embedding = self.convs[1](self.ts_scaler(x))  # dim(bs, hidden_dim, len_ts-patch_window_size-1)
         ts_var_embeddings.append(embedding)
 
         # split ts_var_embeddings into patches
@@ -88,7 +88,7 @@ class TokenGeneratorUnit(nn.Module):
             torch.cat(scalar_embeddings, dim=-1)
             ], dim=-1)
         x_embeddings = self.linear_encoder(x_embeddings)
-        
+
         return x_embeddings
 
 
@@ -111,17 +111,17 @@ class ViTUnit(nn.Module):
 
 class Mantis(
     nn.Module,
-    PyTorchModelHubMixin, 
+    PyTorchModelHubMixin,
     # optionally, you can add metadata which gets pushed to the model card
     library_name="mantis",
     repo_url="https://huggingface.co/paris-noah/Mantis-8M/tree/main",
     pipeline_tag="time-series-foundation-model",
-    license="mit",    
+    license="mit",
     tags=["time-series-foundation-model"],
 ):
-    def __init__(self, *, seq_len=512, hidden_dim=256, num_patches=32, scalar_scales=None, hidden_dim_scalar_enc=32, epsilon_scalar_enc=1.1,
-                 transf_depth=6, transf_num_heads=8, transf_mlp_dim=512, transf_dim_head=128, transf_dropout=0.1, device='cuda:0', pre_training=False,
-                 debugging=False):
+    def __init__(self, seq_len=512, hidden_dim=256, num_patches=32, scalar_scales=None, hidden_dim_scalar_enc=32, epsilon_scalar_enc=1.1,
+                 transf_depth=6, transf_num_heads=8, transf_mlp_dim=512, transf_dim_head=128, transf_dropout=0.1, device='cuda:0', 
+                 pre_training=False):
         '''
         The architecture of Mantis foundation model.
         params:
@@ -152,10 +152,10 @@ class Mantis(
         self.seq_len = seq_len
         self.pre_training = pre_training
 
-        self.tokgen_unit = TokenGeneratorUnit(hidden_dim=hidden_dim, num_patches=num_patches, patch_window_size=patch_window_size, 
-                                              scalar_scales=scalar_scales, hidden_dim_scalar_enc=hidden_dim_scalar_enc, 
+        self.tokgen_unit = TokenGeneratorUnit(hidden_dim=hidden_dim, num_patches=num_patches, patch_window_size=patch_window_size,
+                                              scalar_scales=scalar_scales, hidden_dim_scalar_enc=hidden_dim_scalar_enc,
                                               epsilon_scalar_enc=epsilon_scalar_enc)
-        self.vit_unit = ViTUnit(hidden_dim=hidden_dim, num_patches=num_patches, depth=transf_depth, heads=transf_num_heads, 
+        self.vit_unit = ViTUnit(hidden_dim=hidden_dim, num_patches=num_patches, depth=transf_depth, heads=transf_num_heads,
                                 mlp_dim=transf_mlp_dim, dim_head=transf_dim_head, dropout=transf_dropout, device=device)
         
         self.prj = nn.Sequential(
