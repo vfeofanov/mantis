@@ -113,13 +113,11 @@ class Mantis(
     nn.Module,
     PyTorchModelHubMixin, 
     # optionally, you can add metadata which gets pushed to the model card
-    library_name="mantis",
-    repo_url="https://huggingface.co/paris-noah/Mantis-8M/tree/main",
-    pipeline_tag="time-series-foundation-model",
-    license="mit",    
-    tags=["time-series-foundation-model"],
-    # repo_url="https://github.com/huggingface/my-cool-library",
-    # docs_url="https://huggingface.co/docs/my-cool-library",
+    # library_name="mantis",
+    # repo_url="https://huggingface.co/paris-noah/Mantis-8M/tree/main",
+    # pipeline_tag="time-series-foundation-model",
+    # license="mit",    
+    # tags=["time-series-foundation-model"],
 ):
     def __init__(self, *, seq_len=512, hidden_dim=256, num_patches=32, scalar_scales=None, hidden_dim_scalar_enc=32, epsilon_scalar_enc=1.1,
                  transf_depth=6, transf_num_heads=8, transf_mlp_dim=512, transf_dim_head=128, transf_dropout=0.1, device='cuda:0', pre_training=False,
