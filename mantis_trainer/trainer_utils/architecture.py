@@ -15,7 +15,8 @@ class FineTuningNetwork(nn.Module):
             return self.head(x)
         elif self.adapter is None:
             if x.shape[1] > 1:
-                Warning("The data is multi-variate! Applying encoder to all channels independently")
+                Warning(
+                    "The data is multi-variate! Applying encoder to all channels independently")
                 return self.head(torch.cat([self.encoder(x[:, [i], :]) for i in range(x.shape[1])], dim=-1))
             else:
                 return self.head(self.encoder(x))

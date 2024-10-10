@@ -11,8 +11,10 @@ class LabeledDataset(Dataset):
             x (np.array): data matrix
             y (np.array): class labels
         """
-        self.x = x.to(torch.float32) if isinstance(x, torch.Tensor) else torch.FloatTensor(x)
-        self.y = y.to(torch.long) if isinstance(x, torch.Tensor) else torch.LongTensor(y)
+        self.x = x.to(torch.float32) if isinstance(
+            x, torch.Tensor) else torch.FloatTensor(x)
+        self.y = y.to(torch.long) if isinstance(
+            x, torch.Tensor) else torch.LongTensor(y)
 
     def transform(self, x):
         return x.to(torch.float32) if isinstance(x, torch.Tensor) else torch.FloatTensor(x)
