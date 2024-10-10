@@ -21,9 +21,6 @@ jobs:
           - windows-2022    # Recent Windows versions
           - windows-2019
           - windows-2016
-          - macos-13        # Recent macOS versions
-          - macos-12
-          - macos-11
         python-version: ["3.6", "3.7", "3.8", "3.9", "3.10", "3.11"]
         
     runs-on: ${{ matrix.os }}
