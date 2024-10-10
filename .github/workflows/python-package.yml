@@ -20,7 +20,7 @@ jobs:
           #- ubuntu-20.04
           - macos-15
           - macos-14   # Recent Ubuntu versions
-          - macos-13
+          - macos-12
         python-version: ["3.8", "3.9", "3.10", "3.11"]
         
     runs-on: ${{ matrix.os }}
