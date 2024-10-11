@@ -42,7 +42,7 @@ class MantisTrainer:
         Parameters
         ----------
         x: array-like of shape (n_samples, n_channels, seq_len)
-            The input samples. If data is univariate case, the shape should be (n_samples, 1, seq_len).
+            The input samples. If data is univariate case, the shape should be ``(n_samples, 1, seq_len)``.
             ``seq_len`` should correspond to ``self.network.seq_len``.
         y: array-like of shape (n_samples,)
             The class labels with the following unique_values: ``[i for i in range(n_classes)]``
@@ -50,18 +50,18 @@ class MantisTrainer:
             fine-tuning type
         adapter: nn.Module, default=None
             Adapter is a part of the network that precedes the foundation model and reduces the original data matrix
-            of shape (n_samples, n_channels, seq_len) to (n_samples, new_n_channels, seq_len). By default, adapter
-            is not used.
+            of shape ``(n_samples, n_channels, seq_len)`` to ``(n_samples, new_n_channels, seq_len)``. By default,
+            adapter is not used.
         head: nn.Module, default=None
             Head is a part of the network that follows the foundation model and projects from the embedding space
-            to the probability matrix of shape (n_samples, n_classes). By default, head is a linear layer ``Linear``
+            to the probability matrix of shape ``(n_samples, n_classes)``. By default, head is a linear layer ``Linear``
             preceded by the layer normalization ``LayerNorm``.
         num_epochs: int, default=500
             Number of training epochs.
         batch_size: int, default=256
             Batch size.
         base_learning_rate: float, default=2e-4
-            Learning rate that optimizer starts from. If learning_rate_adjusting is False, 
+            Learning rate that optimizer starts from. If ``learning_rate_adjusting`` is ``False``,
             it remains to be fixed
         init_optimizer: callable, default=None
             Function that initializes the optimizer. By default, ``AdamW`` 
@@ -136,7 +136,7 @@ class MantisTrainer:
                 # adjust learning rate
                 if learning_rate_adjusting:
                     adjust_learning_rate(
-                        num_epochs, optimizer, data_loader, step, base_learning_rate, batch_size)
+                        num_epochs, optimizer, data_loader, step, base_learning_rate)
                 # read data
                 x_batch, y_batch = x_batch.to(
                     self.device), y_batch.to(self.device)

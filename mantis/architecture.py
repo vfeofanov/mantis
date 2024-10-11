@@ -10,13 +10,13 @@ from .vit_utils.positional_encoding import PositionalEncoding
 from .vit_utils.transformer import Transformer
 
 
-# ==============================
-# ==       Organization:      ==
-# ==============================
-# == class TokenGeneratorUnit ==
-# == class ViTUnit            ==
-# == class Mantis             ==
-# ==============================
+# ==================================
+# ====       Organization:      ====
+# ==================================
+# ==== class TokenGeneratorUnit ====
+# ==== class ViTUnit            ====
+# ==== class Mantis             ====
+# ==================================
 
 
 class TokenGeneratorUnit(nn.Module):
@@ -73,7 +73,7 @@ class TokenGeneratorUnit(nn.Module):
         # diff
         with torch.no_grad():
             diff_x = torch.diff(x, n=1, axis=2)
-            # pad by zeros to have same dimensionalities as x
+            # pad by zeros to have same dimensionality as x
             diff_x = torch.nn.functional.pad(diff_x, (0, 1))
             # dim(bs, hidden_dim, len_ts-patch_window_size-1)
             embedding = self.convs[0](self.ts_scaler(diff_x))
@@ -132,28 +132,47 @@ class Mantis(
     license="mit",
     tags=["time-series-foundation-model"],
 ):
+    """
+    The architecture of Mantis time series foundation model.
+
+    Parameters
+    ----------
+    seq_len: int, default 512
+        The sequence length, i.e., the length of each time series. This model does not support data with non-fixed
+        sequence length, please make all the time series to be of a fixed length by resizing or padding.
+    hidden_dim: int, default=256
+        Size of a patch (token), i.e., what the hidden dimension each patch is projected to. At the same time,
+        ``hidden_dim`` corresponds to the dimension of the embedding space.
+    num_patches: int, default=32
+        Number of patches (tokens).
+    scalar_scales: list, default=None
+        List of scales used for MultiScaledScalarEncoder in TokenGeneratorUnit. By default, initialized as [1e-4, 1e-3,
+        1e-2, 1e-1, 1, 1e1, 1e2, 1e3, 1e4].
+    hidden_dim_scalar_enc: int, default=32
+        Hidden dimension of a scalar encoder used for MultiScaledScalarEncoder in TokenGeneratorUnit.
+    epsilon_scalar_enc: float, default=1.1
+        A constant term used to tolerate the computational error in computation of scale weights for
+        MultiScaledScalarEncoder in TokenGeneratorUnit.
+    transf_depth: int, default=6
+        Number of transformer layers used for Transformer in ViTUnit.
+    transf_num_heads: int, default=8
+        Number of self-attention heads used for Transformer in ViTUnit.
+    transf_mlp_dim: int, default=512
+        Hidden dimension of the MLP (feed-forward) transformer's part used for Transformer in ViTUnit.
+    transf_dim_head: int, default=128
+        Hidden dimension of the keys, queries and values used for Transformer in ViTUnit.
+    transf_dropout: froat, default=0.1
+        Dropout value used for Transformer in ViTUnit.
+    device: {'cpu', 'cuda'}, default='cuda'
+        On which device the model is located.
+    pre_training: bool, default=False
+        If True, applies an MLP projector after the ViTUnit, which originally was used to pre-train the model using
+        InfoNCE contrastive loss.
+    """
+
     def __init__(self, seq_len=512, hidden_dim=256, num_patches=32, scalar_scales=None, hidden_dim_scalar_enc=32,
                  epsilon_scalar_enc=1.1, transf_depth=6, transf_num_heads=8, transf_mlp_dim=512, transf_dim_head=128,
-                 transf_dropout=0.1, device='cuda:0', pre_training=False):
-        """
-        The architecture of Mantis foundation model.
-        Parameters
-        ----------
-        seq_len: length of time series
-        hidden_dim: size of a token, i.e., what is the hidden dimension each patch is projected to
-        num_patches: number of patches
-        scalar_scales: list of scales used for MultiScaledScalarEncoder in TokenGeneratorUnit
-        hidden_dim_scalar_enc: hidden dimension used for MultiScaledScalarEncoder in TokenGeneratorUnit
-        epsilon_scalar_enc: esplilon used for MultiScaledScalarEncoder in TokenGeneratorUnit
-        transf_depth: layers of transformer used for Transformer in ViTUnit
-        transf_num_heads: number of self-attention heads used for Transformer in ViTUnit
-        transf_mlp_dim: hidden dim of mlp of feed forward layer of transformer used for Transformer in ViTUnit
-        transf_dim_head: q,k,v dim used for Transformer in ViTUnit
-        transf_dropout: dropout value used for Transformer in ViTUnit
-        device: device
-        pre_training: if True, applies a MLP projector after the ViTUnit, which originally was used to pre-train
-        the model using InfoNCE contrastive loss.
-        """
+                 transf_dropout=0.1, device='cuda', pre_training=False):
 
         super().__init__()
         assert (seq_len % num_patches) == 0, print(

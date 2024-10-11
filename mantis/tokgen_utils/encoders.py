@@ -15,8 +15,6 @@ class LinearEncoder(nn.Module):
 
 class ScalarEncoder(nn.Module):
     def __init__(self, k, hidden_dim):
-        '''
-        '''
         super(ScalarEncoder, self).__init__()
         self.w = torch.nn.Parameter(torch.rand(
             (1, hidden_dim), dtype=torch.float, requires_grad=True))
@@ -27,8 +25,6 @@ class ScalarEncoder(nn.Module):
             normalized_shape=hidden_dim, eps=1e-15)
 
     def forward(self, x):
-        '''
-        '''
         z = x * self.w + self.k * self.b
         y = self.layer_norm(z)
         return y
@@ -36,10 +32,19 @@ class ScalarEncoder(nn.Module):
 
 class MultiScaledScalarEncoder(nn.Module):
     def __init__(self, scales, hidden_dim, epsilon):
-        '''
-        An encoding of a scalar variable
+        """
+        A multi-scaled encoding of a scalar variable:
         https://arxiv.org/pdf/2310.07402.pdf
-        '''
+
+        Parameters
+        ----------
+        scales: list, default=None
+            List of scales. By default, initialized as [1e-4, 1e-3, 1e-2, 1e-1, 1, 1e1, 1e2, 1e3, 1e4].
+        hidden_dim: int, default=32
+            Hidden dimension of a scalar encoder.
+        epsilon: float, default=1.1
+            A constant term used to tolerate the computational error in computation of scale weights.
+        """
         super(MultiScaledScalarEncoder, self).__init__()
         self.register_buffer('scales', torch.tensor(scales))
         self.epsilon = epsilon
@@ -47,9 +52,6 @@ class MultiScaledScalarEncoder(nn.Module):
             [ScalarEncoder(k, hidden_dim) for k in scales])
 
     def forward(self, x):
-        '''
-        x:input, dim(batch_size,*,1)
-        '''
         alpha = abs(1 / torch.log(torch.matmul(abs(x), 1 /
                     self.scales.reshape(1, -1)) + self.epsilon))
         alpha = alpha / torch.sum(alpha, dim=-1, keepdim=True)

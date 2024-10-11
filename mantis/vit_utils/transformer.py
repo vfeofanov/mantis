@@ -5,6 +5,9 @@ from einops import rearrange
 
 
 class PreNorm(nn.Module):
+    """
+    Layer Normalization before a layer.
+    """
     def __init__(self, dim, fn):
         super().__init__()
         self.norm = nn.LayerNorm(dim)
@@ -15,6 +18,9 @@ class PreNorm(nn.Module):
 
 
 class FeedForward(nn.Module):
+    """
+    The MLP (feed forward) block in a transformer.
+    """
     def __init__(self, dim, hidden_dim, dropout=0.):
         super().__init__()
         self.net = nn.Sequential(
@@ -30,6 +36,9 @@ class FeedForward(nn.Module):
 
 
 class Attention(nn.Module):
+    """
+    The attention block in a transformer.
+    """
     def __init__(self, dim, heads=8, dim_head=64, dropout=0.):
         super().__init__()
         inner_dim = dim_head * heads
@@ -63,6 +72,9 @@ class Attention(nn.Module):
 
 
 class Transformer(nn.Module):
+    """
+    Transformer layer.
+    """
     def __init__(self, dim, depth, heads, dim_head, mlp_dim, dropout=0.):
         super().__init__()
         self.layers = nn.ModuleList([])

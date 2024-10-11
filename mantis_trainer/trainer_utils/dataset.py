@@ -5,12 +5,6 @@ from torch.utils.data import Dataset
 
 class LabeledDataset(Dataset):
     def __init__(self, x, y):
-        """
-        Converts from a numpy data set to a torch one
-        Args:
-            x (np.array): data matrix
-            y (np.array): class labels
-        """
         self.x = x.to(torch.float32) if isinstance(
             x, torch.Tensor) else torch.FloatTensor(x)
         self.y = y.to(torch.long) if isinstance(

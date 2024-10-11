@@ -5,6 +5,9 @@ from torch import nn
 
 
 class PositionalEncoding(nn.Module):
+    """
+    Sinusoidal positional encoder.
+    """
     def __init__(self, d_model, dropout=0.1, max_len=5000):
         super(PositionalEncoding, self).__init__()
         self.dropout = nn.Dropout(p=dropout)
@@ -19,8 +22,9 @@ class PositionalEncoding(nn.Module):
 
     def forward(self, x):
         """
-        Arguments:
-            x: Tensor, shape ``[seq_len, batch_size, embedding_dim]``
+        Parameters
+        ----------
+        x: torch.Tensor of shape ``[seq_len, batch_size, d_model]``
         """
         x = x + self.pe[:x.size(0)]
         return self.dropout(x)
