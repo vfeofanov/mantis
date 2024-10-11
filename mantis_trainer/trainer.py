@@ -15,15 +15,18 @@ from .trainer_utils.scheduling import adjust_learning_rate
 
 
 class MantisTrainer:
+    """
+    A scikit-learn-like class to use Mantis as a feature extractor or fine-tune it to the downstream task.
+
+    Parameters
+    ----------
+    device: {'cpu', 'cuda'}
+        On which device the model is located and trained.
+    network: Mantis, default=None
+        The foundation model. If None, the class initializes a Mantis object by itself (so weights are randomly
+        initialized). Otherwise, pass a pre-trained model.
+    """
     def __init__(self, device, network=None):
-        """
-        A scikit-learn-like class to use Mantis as a feature extractor or fine-tune it to the downstream task.
-        Parameters
-        ----------
-        device: either cpu or cuda
-        network: if None, the class initializes a Mantis object by itself (so weights are randomly initialized).
-        Otherwise, pass a pre-trained model.
-        """
         self.device = device
         if network is None:
             network = Mantis(seq_len=512, hidden_dim=256, num_patches=32, scalar_scales=None, hidden_dim_scalar_enc=32,
@@ -34,6 +37,7 @@ class MantisTrainer:
     def fit(self, x, y, fine_tuning_type='full', adapter=None, head=None, num_epochs=500, batch_size=256,
             base_learning_rate=2e-4, init_optimizer=None, criterion=None, learning_rate_adjusting=True):
         """
+        Fit (fine-tune) the foundation model to the downstream task.
 
         Parameters
         ----------
