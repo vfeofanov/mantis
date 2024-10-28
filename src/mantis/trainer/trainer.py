@@ -7,7 +7,7 @@ from itertools import chain
 from torch.utils.data import DataLoader, TensorDataset
 from torch import nn
 
-from mantis import Mantis
+from mantis import Mantis8M
 
 from .trainer_utils.architecture import FineTuningNetwork
 from .trainer_utils.dataset import LabeledDataset
@@ -29,7 +29,7 @@ class MantisTrainer:
     def __init__(self, device, network=None):
         self.device = device
         if network is None:
-            network = Mantis(seq_len=512, hidden_dim=256, num_patches=32, scalar_scales=None, hidden_dim_scalar_enc=32,
+            network = Mantis8M(seq_len=512, hidden_dim=256, num_patches=32, scalar_scales=None, hidden_dim_scalar_enc=32,
                              epsilon_scalar_enc=1.1, transf_depth=6, transf_num_heads=8, transf_mlp_dim=512,
                              transf_dim_head=128, transf_dropout=0.1, device=device, pre_training=False)
         self.network = network.to(device)

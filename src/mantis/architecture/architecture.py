@@ -122,7 +122,7 @@ class ViTUnit(nn.Module):
         return cls_tokens.reshape(cls_tokens.shape[0], -1)
 
 
-class Mantis(
+class Mantis8M(
     nn.Module,
     PyTorchModelHubMixin,
     # optionally, you can add metadata which gets pushed to the model card
