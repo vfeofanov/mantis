@@ -70,7 +70,7 @@ class MantisTrainer:
             Learning criterion. By default, ``CrossEntropyLoss`` is used. 
         learning_rate_adjusting: bool, default=True
             Whether to use the implemented scheduling scheme.
-
+        
         Returns
         -------
         self.fine_tuned_model: nn.Module
@@ -155,7 +155,7 @@ class MantisTrainer:
                 epoch, avg_loss_in_epoch), refresh=True)
         return self.fine_tuned_model
 
-    def transform(self, x, batch_size=256, three_dim=False):
+    def transform(self, x, batch_size=256, three_dim=False, to_numpy=True):
         """
         Projects to the embedding space using self.network.
 
@@ -172,26 +172,29 @@ class MantisTrainer:
             Whether the output should be two- or three-dimensional. By default, the embeddings of all channels are
             concatenated along the same axis, so the output is of shape (n_samples, n_channels * hidden_dim). When
             three_dim is set to True, the output is of shape (n_samples, n_channels, hidden_dim).
+        to_numpy: bool, default=True
+            Whether to convert the output to a numpy array.
 
         Returns
         -------
         z: array-like of shape (n_samples, n_channels * hidden_dim) or (n_samples, n_channels, hidden_dim)
             Embeddings.
         """
+        concat = np.concatenate if to_numpy else torch.cat
         # apply network to each channel
         if three_dim:
-            return np.concatenate([
-                self._transform(x[:, [i], :], batch_size=batch_size)[
+            return concat([
+                self._transform(x[:, [i], :], batch_size=batch_size, to_numpy=to_numpy)[
                     :, None, :]
                 for i in range(x.shape[1])
             ], axis=1)
         else:
-            return np.concatenate([
-                self._transform(x[:, [i], :], batch_size=batch_size)
+            return concat([
+                self._transform(x[:, [i], :], batch_size=batch_size, to_numpy=to_numpy)
                 for i in range(x.shape[1])
             ], axis=1)
 
-    def _transform(self, x, batch_size=256):
+    def _transform(self, x, batch_size=256, to_numpy=True):
         self.network.eval()
         dataloader = self._prepare_dataloader_for_inference(x, batch_size)
         outs = []
@@ -202,9 +205,12 @@ class MantisTrainer:
             outs.append(out)
         outs = torch.cat(outs)
         self.network.train()
-        return outs.cpu().numpy()
+        if to_numpy:
+            return outs.cpu().numpy()
+        else:
+            return outs
 
-    def predict_proba(self, x, batch_size=256):
+    def predict_proba(self, x, batch_size=256, to_numpy=True):
         """
         Predicts the class probability matrix using self.fine_tuned_model.
 
@@ -216,7 +222,9 @@ class MantisTrainer:
         batch_size: int, default=256
             To fit memory, the data matrix is split into the chunks for inference. ``batch_size`` corresponds to
             the chunk size.
-
+        to_numpy: bool, default=True
+            Whether to convert the output to a numpy array.
+        
         Returns
         -------
         probs: array_like of shape (n_samples, n_classes)
@@ -229,6 +237,7 @@ class MantisTrainer:
         for _, batch in enumerate(dataloader):
             x = batch[0].to(self.device)
             with torch.no_grad():
+                # TODO: to delete and process fine-tuning the head outside of the trainer
                 if self.fine_tuning_type == 'head':
                     out = torch.softmax(
                         self.fine_tuned_model.head(self.network(x)), dim=-1)
@@ -236,9 +245,12 @@ class MantisTrainer:
                     out = torch.softmax(self.fine_tuned_model(x), dim=-1)
             outs.append(out.cpu())
         outs = torch.cat(outs)
-        return outs.cpu().numpy()
+        if to_numpy:
+            return outs.cpu().numpy()
+        else:
+            return outs
 
-    def predict(self, x, batch_size=256):
+    def predict(self, x, batch_size=256, to_numpy=True):
         """
         Predicts the class labels using self.fine_tuned_model.
 
@@ -250,13 +262,15 @@ class MantisTrainer:
         batch_size: int, default=256
             To fit memory, the data matrix is split into the chunks for inference. ``batch_size`` corresponds to
             the chunk size.
-
+        to_numpy: bool, default=True
+            Whether to convert the output to a numpy array.
+        
         Returns
         -------
         y: array_like of shape (n_samples,)
             Class labels.
         """
-        probs = self.predict_proba(x, batch_size=batch_size)
+        probs = self.predict_proba(x, batch_size=batch_size, to_numpy=to_numpy)
         return probs.argmax(axis=1)
 
     def _prepare_dataloader_for_inference(self, x, batch_size):
