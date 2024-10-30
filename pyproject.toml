@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools", "wheel", "setuptools_scm[toml]"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mantis"
+authors = [
+  {name = "Vasilii Feofanov", email = "vasilii.feofanov@gmail.com"},
+  {name = "Songkang Wen", email = "wensongkang@huawei.com"},
+  {name = "Romain Ilbert", email = "romain.ilbert@hotmail.fr"},
+  {name = "Hongbo Guo", email = "guohongbo4@huawei.com"},
+  {name = "Malik Tiomoko", email = "malik.tiomoko@huawei.com"},
+  {name = "Lujia Pan", email = "panlujia@huawei.com"},
+  {name = "Ievgen Redko", email = "ievgen.redko@huawei.com"},
+  {name = "Jianfeng Zhang", email = "zhangjianfeng3@huawei.com"},
+]
+maintainers = [
+  {name = "Vasilii Feofanov", email = "vasilii.feofanov@gmail.com"},
+]
+dynamic = ["version", "readme", "dependencies"]
+description = "A Foundation Model with Adapters for Multichannel Time Series Classification"
+requires-python = ">=3.9"
+keywords = ["Time Series Foundation Model", "Classification", "Transformer"]
+classifiers = [
+  "Intended Audience :: Science/Research",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "License :: OSI Approved :: MIT License",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence"
+  
+]
+
+[tool.setuptools]
+packages = ["mantis"]
+package-dir = {"" = "src"}
+license-files = ['LICEN[CS]E*'] # ['LICEN[CS]E*', 'COPYING*', 'NOTICE*', 'AUTHORS*']
+
+[tool.setuptools.dynamic]
+readme = { file = ["README.md"] }
+dependencies = { file = ["requirements.txt"] }
+
+[tool.setuptools_scm]
