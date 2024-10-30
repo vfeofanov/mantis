@@ -2,7 +2,7 @@ einops
 huggingface_hub
 numpy
 pandas
-scikit_learn
+scikit-learn
 setuptools
 torch
 tqdm
