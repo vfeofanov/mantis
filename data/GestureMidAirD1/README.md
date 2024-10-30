@@ -1,4 +1,4 @@
-# GestureMidAir data sets
+# From authors of GestureMidAir data sets
 
 Data contain 3D hand trajectories collected with Leap Motion device. There are 13 subjects, each performs 26 interface-command gestures. Each gesture is encoded as a sequence of 3D points, representing the position of the dominant-hand forefinger.
 
@@ -78,3 +78,29 @@ Data created by Fabio M. Caputo et al. (see [1], [2]). Data edited by Hoang Anh 
 [1] https://github.com/giach68/gesturesCodes
 
 [2] Caputo, Fabio M., et al. “Comparing 3D trajectories for simple mid-air gesture recognition.” Computers & Graphics 73 (2018): 17-25.
+
+# From authors of Mantis: data preprocessing
+
+The train and the test data sets were preprocessed in the following way:
+```
+def read_GestureMidAirD1(path_to_original_data):
+    def read_data(file_name):
+        data = pd.read_csv(file_name, sep='\t', header=None).to_numpy()
+        X, y = torch.tensor(data[:, 1:], dtype=torch.float), data[:, 0]
+        X = X.unsqueeze(-2)
+        # reshape sequences to length equal to 512
+        X = F.interpolate(X, size=512, mode='linear', align_corners=False)
+        y -= 1
+        X = X.numpy()
+        y = y.astype(int)
+        return X, y
+
+    file_name_train = path_to_original_data + "GestureMidAirD1_TRAIN.tsv"
+    file_name_test = path_to_original_data + "GestureMidAirD1_TEST.tsv"
+    X_train, y_train = read_data(file_name_train)
+    X_test, y_test = read_data(file_name_test)
+    return X_train, X_test, y_train, y_test
+
+path_to_original_data = "./"
+X_train, X_test, y_train, y_test = read_GestureMidAirD1(path_to_original_data)
+```
