@@ -1,4 +1,4 @@
-from .architecture import Mantis
+from .architecture import Mantis8M
 
 
-__all__ = ['Mantis']
+__all__ = ['Mantis8M']

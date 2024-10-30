@@ -15,7 +15,7 @@ from .vit_utils.transformer import Transformer
 # ==================================
 # ==== class TokenGeneratorUnit ====
 # ==== class ViTUnit            ====
-# ==== class Mantis             ====
+# ==== class Mantis8M           ====
 # ==================================
 
 
