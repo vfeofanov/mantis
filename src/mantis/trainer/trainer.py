@@ -81,10 +81,11 @@ class MantisTrainer:
         # ==== get the whole fine-tuning architecture ====
         # init head
         if head is None:
+            num_channels = x.shape[1] if adapter is None else adapter.new_num_channels
             head = nn.Sequential(
-                nn.LayerNorm(self.network.hidden_dim * x.shape[1]),
+                nn.LayerNorm(self.network.hidden_dim * num_channels),
                 nn.Linear(self.network.hidden_dim *
-                          x.shape[1], np.unique(y).shape[0])
+                          num_channels, np.unique(y).shape[0])
             ).to(self.device)
         else:
             head = head.to(self.device)
