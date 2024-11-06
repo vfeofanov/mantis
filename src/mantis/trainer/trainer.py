@@ -94,12 +94,8 @@ class MantisTrainer:
         else:
             adapter = None
         # when fine-tuning head, the forward pass over the encoder will be done only once (see init data_loader below)
-        if fine_tuning_type == 'head':
-            self.fine_tuned_model = FineTuningNetwork(
-                encoder=None, head=head, adapter=None).to(self.device)
-        else:
-            self.fine_tuned_model = FineTuningNetwork(
-                deepcopy(self.network), head, adapter).to(self.device)
+        self.fine_tuned_model = FineTuningNetwork(
+            deepcopy(self.network), head, adapter).to(self.device)
 
         # ==== get params to fine-tune and set them into the training model ====
         parameters = self._get_fine_tuning_params(
@@ -120,10 +116,7 @@ class MantisTrainer:
             optimizer = init_optimizer(parameters)
 
         # init dataloader, for the head fine-tuning we directly load the embeddings
-        if fine_tuning_type == 'head':
-            train_dataset = LabeledDataset(self.transform(x), y)
-        else:
-            train_dataset = LabeledDataset(x, y)
+        train_dataset = LabeledDataset(x, y)
         data_loader = DataLoader(
             train_dataset, batch_size=batch_size, shuffle=True)
 
@@ -237,12 +230,7 @@ class MantisTrainer:
         for _, batch in enumerate(dataloader):
             x = batch[0].to(self.device)
             with torch.no_grad():
-                # TODO: to delete and process fine-tuning the head outside of the trainer
-                if self.fine_tuning_type == 'head':
-                    out = torch.softmax(
-                        self.fine_tuned_model.head(self.network(x)), dim=-1)
-                else:
-                    out = torch.softmax(self.fine_tuned_model(x), dim=-1)
+                out = torch.softmax(self.fine_tuned_model(x), dim=-1)
             outs.append(out.cpu())
         outs = torch.cat(outs)
         if to_numpy:
