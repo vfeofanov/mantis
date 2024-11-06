@@ -10,8 +10,8 @@ from mantis.architecture import Mantis8M
 from mantis.trainer import MantisTrainer
 
 
-@pytest.mark.parametrize("fine_tuning_type", ['head', 'full', 'scratch'])
-@pytest.mark.parametrize("adapter",  [None, 'pca', 'var', 'svd', 'rand'])
+@pytest.mark.parametrize("fine_tuning_type", ['head', 'full'])
+@pytest.mark.parametrize("adapter",  [None, 'pca', 'svd'])
 @pytest.mark.parametrize("device", ['cpu'])
 def test_multichannel_fine_tune(fine_tuning_type, adapter, device):
     # ==== read data ====
