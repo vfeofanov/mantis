@@ -11,7 +11,7 @@ from mantis.trainer import MantisTrainer
 
 
 @pytest.mark.parametrize("fine_tuning_type", ['head', 'full'])
-@pytest.mark.parametrize("adapter",  [None, 'pca', 'svd'])
+@pytest.mark.parametrize("adapter",  [None, 'pca', 'lcomb'])
 @pytest.mark.parametrize("device", ['cpu'])
 def test_multichannel_fine_tune(fine_tuning_type, adapter, device):
     # ==== read data ====
@@ -31,22 +31,30 @@ def test_multichannel_fine_tune(fine_tuning_type, adapter, device):
             ), f"After applying resize function, the shape of X_train and X_test should be (160, 10, 512) and (74, 10, 512) but got instead {X_train.shape} and {X_test.shape}, respectively."
 
     # ==== apply standalone adapter ====
+    new_num_channels = 5
     standalone_adapters = ['pca', 'var', 'svd', 'rand']
     if adapter in standalone_adapters:
         if adapter == 'var':
             from mantis.adapters import VarianceBasedSelector
-            adapter = VarianceBasedSelector(new_num_channels=5)
+            adapter = VarianceBasedSelector(new_num_channels=new_num_channels)
             adapter.fit(X_train)
             X_train, X_test = adapter.transform(
                 X_train), adapter.transform(X_test)
         else:
             from mantis.adapters import MultichannelProjector
             adapter = MultichannelProjector(
-                new_num_channels=5, patch_window_size=1, base_projector=adapter)
+                new_num_channels=new_num_channels, patch_window_size=1, base_projector=adapter)
             adapter.fit(X_train)
             X_train, X_test = adapter.transform(
                 X_train), adapter.transform(X_test)
         adapter = None
+    elif adapter is not None:
+        if adapter == 'lcomb':
+            from mantis.adapters import LinearChannelCombiner
+            adapter = LinearChannelCombiner(num_channels=X_train.shape[1], new_num_channels=new_num_channels)
+        # change fine_tuning_type to learn adapter as well
+        if fine_tuning_type == 'head':
+            fine_tuning_type = 'adapter_head'
 
     # ==== init the model, load the weights ====
     network = Mantis8M(device=device)
@@ -60,18 +68,23 @@ def test_multichannel_fine_tune(fine_tuning_type, adapter, device):
     def init_optimizer(params): return torch.optim.AdamW(
         params, lr=2e-3, betas=(0.9, 0.999), weight_decay=0.05)
     num_epochs = 2
-    head = nn.Sequential(
-        nn.LayerNorm(network.hidden_dim * X_train.shape[1]),
-        nn.Linear(network.hidden_dim * X_train.shape[1], 100),
-        nn.LayerNorm(100),
-        nn.Linear(100, np.unique(y_train).shape[0])
-    )
+    if adapter is None:
+        head = nn.Sequential(
+            nn.LayerNorm(network.hidden_dim * X_train.shape[1]),
+            nn.Linear(network.hidden_dim * X_train.shape[1], 100),
+            nn.LayerNorm(100),
+            nn.Linear(100, np.unique(y_train).shape[0])
+        )
+    else:
+        head = nn.Sequential(
+            nn.LayerNorm(network.hidden_dim * new_num_channels),
+            nn.Linear(network.hidden_dim * new_num_channels, 100),
+            nn.LayerNorm(100),
+            nn.Linear(100, np.unique(y_train).shape[0])
+        )
     batch_size = 257
     criterion = torch.nn.CrossEntropyLoss(label_smoothing=0.1)
     learning_rate_adjusting = False
-
-    if adapter is not None and fine_tuning_type == 'head':
-        fine_tuning_type = 'adapter_head'
 
     # fine-tune the model
     model.fit(X_train, y_train, fine_tuning_type=fine_tuning_type, init_optimizer=init_optimizer, num_epochs=num_epochs,
