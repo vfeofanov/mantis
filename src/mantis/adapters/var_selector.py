@@ -5,27 +5,19 @@ from sklearn.feature_selection import VarianceThreshold
 
 class VarianceBasedSelector:
     """
-    Perform filter feature selection approach to the multichannel time series data
-    Class to reduce the dimensionality of input channels by selecting features with the highest variance.
+    Perform a filter feature selection approach to reduce the number of channels in a multichannel time series data set.
+    More specifically, it selects those channels that have the highest variance.
 
     Parameters
     ----------
     new_num_channels: int 
-        Number of channels in the latent tensor.
+        The number of selected channels.
     """
-
     def __init__(self, new_num_channels):
         self.new_num_channels = new_num_channels
         self.support_ = None
         
-    
     def fit(self, X):
-        """
-        Fit the feature selector based on the variance of the input data.
-
-        Args:
-            x (torch.Tensor): Input tensor of shape (batch_size, num_channels, sequence_length).
-        """
         # Flatten the tensor to 2D for sklearn compatibility
         X_transposed = np.swapaxes(X, 1, 2)
 
@@ -40,20 +32,11 @@ class VarianceBasedSelector:
         self.support_ = np.argsort(variances)[::-1][:self.new_num_channels]
         return self.support_
 
-    def transform(self, x):
-        """
-        Transform the input data by selecting features based on precomputed variances.
-
-        Args:
-            x (torch.Tensor): Input tensor of shape (batch_size, num_channels, sequence_length).
-
-        Returns:
-            torch.Tensor: Reduced tensor with selected features.
-        """
+    def transform(self, X):
         if self.support_ is None:
             raise RuntimeError("You must call fit at least once before calling transform.")
 
         # Select features based on precomputed indices
-        selected_features = x[:, self.support_, :]
+        selected_features = X[:, self.support_, :]
 
         return selected_features
