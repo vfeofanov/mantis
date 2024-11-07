@@ -5,11 +5,24 @@ from sklearn.random_projection import SparseRandomProjection
 
 
 class MultichannelProjector:
-    def __init__(self, new_num_channels, patch_window_size=None, base_projector=None):
+    """
+    A generic class to use various scikit-learn dimension reduction methods to reduce 
+    the number of channels in a multichannel time series dataset.
+    
+    Parameters
+    ----------
+    new_num_channels : int
+        The number of channels after projection.
+    patch_window_size : int, default=1
+        The size of the patch window. By default, it is equal to 1, i.e., no patching.
+    base_projector : str or object, default=None
+        The base projector to use. Can be 'pca', 'svd', 'rand', or a custom projector that accepts
+        `n_components` at the initialization and has `fit` and `transform` methods.
+    """
+    def __init__(self, new_num_channels, patch_window_size=1, base_projector=None):
         # init dimensions
         self.new_num_channels = new_num_channels
         self.patch_window_size = patch_window_size
-        self.patch_window_size_ = 1 if patch_window_size is None else patch_window_size
         # init base projector 
         self.base_projector = base_projector
         n_components = patch_window_size * new_num_channels
@@ -27,24 +40,20 @@ class MultichannelProjector:
         X_transposed = np.swapaxes(X, 1, 2)
         
         num_samples, seq_len, num_channels = X_transposed.shape
-        num_patches = seq_len // self.patch_window_size_
-        assert num_patches * self.patch_window_size_ == seq_len
+        num_patches = seq_len // self.patch_window_size
+        assert num_patches * self.patch_window_size == seq_len
 
-        X_2d = X_transposed.reshape(num_samples * num_patches, self.patch_window_size_ * num_channels)
+        X_2d = X_transposed.reshape(num_samples * num_patches, self.patch_window_size * num_channels)
         return self.base_projector_.fit(X_2d)
 
     def transform(self, X):
-        """
-        Apply the PCA transform on the input data.
-        """
-        # X_transposed = X.transpose([1, 2])
         X_transposed = np.swapaxes(X, 1, 2)
 
         num_samples, seq_len, num_channels = X_transposed.shape
-        num_patches = seq_len // self.patch_window_size_
-        assert num_patches * self.patch_window_size_ == seq_len
+        num_patches = seq_len // self.patch_window_size
+        assert num_patches * self.patch_window_size == seq_len
 
-        X_2d = X_transposed.reshape(num_samples * num_patches, self.patch_window_size_ * num_channels)
+        X_2d = X_transposed.reshape(num_samples * num_patches, self.patch_window_size * num_channels)
 
         X_transformed = self.base_projector_.transform(X_2d)
         X_transformed = X_transformed.reshape([num_samples, seq_len, self.new_num_channels])
