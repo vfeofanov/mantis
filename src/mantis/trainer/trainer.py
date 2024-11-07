@@ -16,7 +16,7 @@ from .trainer_utils.scheduling import adjust_learning_rate
 
 class MantisTrainer:
     """
-    A scikit-learn-like class to use Mantis as a feature extractor or fine-tune it to the downstream task.
+    A scikit-learn-like wrapper to use Mantis as a feature extractor or fine-tune it to the downstream task.
 
     Parameters
     ----------
