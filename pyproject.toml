@@ -1,25 +1,22 @@
-[build-system]
-requires = ["setuptools", "wheel", "setuptools_scm[toml]"]
-build-backend = "setuptools.build_meta"
-
-[project]
+[tool.poetry]
 name = "mantis"
+version = "0.1.0"
+description = "A Foundation Model with Adapters for Multichannel Time Series Classification"
 authors = [
-  {name = "Vasilii Feofanov", email = "vasilii.feofanov@gmail.com"},
-  {name = "Songkang Wen", email = "wensongkang@huawei.com"},
-  {name = "Romain Ilbert", email = "romain.ilbert@hotmail.fr"},
-  {name = "Hongbo Guo", email = "guohongbo4@huawei.com"},
-  {name = "Malik Tiomoko", email = "malik.tiomoko@huawei.com"},
-  {name = "Lujia Pan", email = "panlujia@huawei.com"},
-  {name = "Ievgen Redko", email = "ievgen.redko@huawei.com"},
-  {name = "Jianfeng Zhang", email = "zhangjianfeng3@huawei.com"},
+    "Vasilii Feofanov <vasilii.feofanov@gmail.com>",
+    "Songkang Wen <wensongkang@huawei.com>",
+    "Romain Ilbert <romain.ilbert@hotmail.fr>",
+    "Hongbo Guo <guohongbo4@huawei.com>",
+    "Malik Tiomoko <malik.tiomoko@huawei.com>",
+    "Lujia Pan <panlujia@huawei.com>",
+    "Ievgen Redko <ievgen.redko@huawei.com>",
+    "Jianfeng Zhang <zhangjianfeng3@huawei.com>",
 ]
 maintainers = [
-  {name = "Vasilii Feofanov", email = "vasilii.feofanov@gmail.com"},
+  "Vasilii Feofanov <vasilii.feofanov@gmail.com>",
 ]
-dynamic = ["version", "readme", "dependencies"]
-description = "A Foundation Model with Adapters for Multichannel Time Series Classification"
-requires-python = ">=3.9"
+license = "MIT"
+readme = "README.md"
 keywords = ["Time Series Foundation Model", "Classification", "Transformer"]
 classifiers = [
   "Intended Audience :: Science/Research",
@@ -34,13 +31,20 @@ classifiers = [
   
 ]
 
-[tool.setuptools]
-packages = ["mantis"]
-package-dir = {"" = "src"}
-license-files = ['LICEN[CS]E*'] # ['LICEN[CS]E*', 'COPYING*', 'NOTICE*', 'AUTHORS*']
+[tool.poetry.dependencies]
+python = "^3.9"
+einops = "^0.8"
+huggingface-hub = "^0.23"
+numpy = "^1.23"
+pandas = "^1.5"
+scikit-learn = "^1.2"
+torch = ">=1.12"
+tqdm = "^4.64"
+safetensors = "^0.4"
 
-[tool.setuptools.dynamic]
-readme = { file = ["README.md"] }
-dependencies = { file = ["requirements.txt"] }
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.1"
 
-[tool.setuptools_scm]
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
