@@ -1,3 +1,5 @@
+"""Init file for trainer.""" 
+
 from .trainer import MantisTrainer
 
 
