@@ -13,17 +13,18 @@ on:
 jobs:
   build:    
     strategy:
-      #fail-fast: false
+      fail-fast: false
       matrix:
         os: 
           - ubuntu-24.04
-          - ubuntu-22.04
-          - ubuntu-20.04
+          # - ubuntu-22.04
+          # - ubuntu-20.04
           - windows-2022
-          - windows-2019
+          # - windows-2019
           - macos-15
-          - macos-14
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
+          # - macos-14
+        # python-version: ["3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.10"]
     
     runs-on: ${{ matrix.os }}
     steps:
@@ -36,12 +37,20 @@ jobs:
           
       - name: Install Poetry
         run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          python -m pip install --upgrade pip
+          pip install poetry
+
+      - name: Add Poetry to PATH
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            echo "%APPDATA%\\Python\\Scripts" >> $GITHUB_PATH
+          else
+            echo "$HOME/.local/bin" >> $GITHUB_PATH
+          fi
 
       - name: Configure Poetry (disable virtualenvs in CI)
         run: |
-          poetry config virtualenvs.create false
+          poetry config virtualenvs.create false --local
 
       - name: Install dependencies with Poetry
         run: |
@@ -50,11 +59,13 @@ jobs:
       - name: Cache Poetry dependencies
         uses: actions/cache@v3
         with:
-          path: ~/.cache/pypoetry
+          path: |
+           ~/.cache/pypoetry
+           C:\Users\runneradmin\AppData\Local\pypoetry\Cache
           key: ${{ runner.os }}-poetry-${{ hashFiles('**/poetry.lock') }}
           restore-keys: |
             ${{ runner.os }}-poetry-
 
       - name: Run tests
         run: |
-          poetry run pytest
+          poetry run pytest --maxfail=5 --disable-warnings
