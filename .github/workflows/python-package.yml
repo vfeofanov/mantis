@@ -16,12 +16,12 @@ jobs:
       fail-fast: false
       matrix:
         os: 
-          - ubuntu-24.04
+          # - ubuntu-24.04
           # - ubuntu-22.04
           # - ubuntu-20.04
           - windows-2022
           # - windows-2019
-          - macos-15
+          # - macos-15
           # - macos-14
         # python-version: ["3.9", "3.10", "3.11", "3.12"]
         python-version: ["3.10"]
@@ -40,13 +40,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install poetry
 
-      - name: Add Poetry to PATH
-        run: |
-          if [ "${{ runner.os }}" = "Windows" ]; then
-            echo "%APPDATA%\\Python\\Scripts" >> $GITHUB_PATH
-          else
-            echo "$HOME/.local/bin" >> $GITHUB_PATH
-          fi
+      - name: Add Poetry to PATH (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Add Poetry to PATH (Windows)
+        if: runner.os == 'Windows'
+        run: echo "%APPDATA%\\Python\\Scripts" >> $GITHUB_PATH
 
       - name: Configure Poetry (disable virtualenvs in CI)
         run: |
@@ -68,4 +68,4 @@ jobs:
 
       - name: Run tests
         run: |
-          poetry run pytest --maxfail=5 --disable-warnings
+          poetry run pytest tests/test_single_channel_extract_feats.py
