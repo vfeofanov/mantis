@@ -16,6 +16,37 @@ Please find out technical report on arxiv **TODO** and the model checkpoint on [
 pip install mantis
 ```
 
+### Using poetry
+
+To install poetry on ubuntu, run the following command:
+```bash
+curl -sSL https://install.python-poetry.org | python3 -
+```
+Then, add the path to the binary file (e.g., `export PATH="/home/username/.local/bin:$PATH"`) to your shell configuration file.
+Now you can create a virtual environment that is based on one of your already installed python interpeter.
+For example, if your default python is 3.9, then create the environment by running:
+```bash
+poetry use env 3.9
+```
+Alternatively, you can give a path to the interpreter, for example, if you want to use Anaconda python interpreter:
+```bash
+poetry env use /path/to/anaconda3/envs/my_env/bin/python
+```
+Activate a new shell session within the environment by
+```bash
+poetry shell
+```
+Then, install the package (in editable mode) with the dependencies by running:
+```bash
+poetry install
+```
+If it doesn't work (for example, because of the CUDA version) you can try to re-generate the lock file:
+```bash
+poetry lock
+poetry install
+```
+
+
 ## Getting started
 
 Please refer to `getting_started/` folder to see reproducible examples of how the package can be used.
