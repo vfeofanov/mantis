@@ -1,7 +1,7 @@
-"""Init file.""" 
- 
- _submodules = [
+"""Init file."""
+
+_submodules = [
     "adapters",
     "architecture",
     "trainer",
- ]
+]

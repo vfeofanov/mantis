@@ -1,13 +1,14 @@
 # This workflow will install Python dependencies, run tests and lint with a variety of Python versions
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+# Integrated with Poetry for dependency management
 
 name: Python package
 
-#on:
-#  push:
-#    branches: [ "main" ]
-#  pull_request:
-#    branches: [ "main" ]
+on:
+ push:
+   branches: [ "main" ]
+ pull_request:
+   branches: [ "main" ]
 
 jobs:
   build:    
@@ -16,49 +17,44 @@ jobs:
       matrix:
         os: 
           - ubuntu-24.04
-          - ubuntu-22.04   # Recent Ubuntu versions
+          - ubuntu-22.04
           - ubuntu-20.04
-          - windows-2022   # Recent Windows versions
-          - windows-2019   
+          - windows-2022
+          - windows-2019
           - macos-15
           - macos-14
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
-        
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+    
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Python ${{ matrix.python-version }} on ${{ matrix.os }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install flake8 pytest
           
-          # Conditional installation of requirements.txt
-          if [ "${{ matrix.os }}" == "macos-12" ]; then
-            pip install "numpy<2"
-          fi
-
-          if [ -f requirements.txt ]; then
-            pip install -r requirements.txt
-          fi
-        if: startsWith(matrix.os, 'ubuntu') || startsWith(matrix.os, 'macos')  # Only runs on Ubuntu and macOS
-
-      - name: Install dependencies (Windows)
+      - name: Install Poetry
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install flake8 pytest
-          if (Test-Path 'requirements.txt') { pip install -r requirements.txt }
-        if: startsWith(matrix.os, 'windows')  # Only runs on Windows
-        
-      - name: Lint with flake8
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Configure Poetry (disable virtualenvs in CI)
         run: |
-          # stop the build if there are Python syntax errors or undefined names
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-      - name: Test with pytest
-        run: | 
-          python demo_univariate.py --device cpu
+          poetry config virtualenvs.create false
+
+      - name: Install dependencies with Poetry
+        run: |
+          poetry install
+      
+      - name: Cache Poetry dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pypoetry
+          key: ${{ runner.os }}-poetry-${{ hashFiles('**/poetry.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-poetry-
+
+      - name: Run tests
+        run: |
+          poetry run pytest
