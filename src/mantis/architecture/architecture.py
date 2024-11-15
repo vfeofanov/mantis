@@ -76,8 +76,8 @@ class TokenGeneratorUnit(nn.Module):
             # pad by zeros to have same dimensionality as x
             diff_x = torch.nn.functional.pad(diff_x, (0, 1))
             # dim(bs, hidden_dim, len_ts-patch_window_size-1)
-            embedding = self.convs[0](self.ts_scaler(diff_x))
-            ts_var_embeddings.append(embedding)
+        embedding = self.convs[0](self.ts_scaler(diff_x))
+        ts_var_embeddings.append(embedding)
         # original ts
         # dim(bs, hidden_dim, len_ts-patch_window_size-1)
         embedding = self.convs[1](self.ts_scaler(x))
