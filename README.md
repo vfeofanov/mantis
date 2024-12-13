@@ -16,7 +16,7 @@ Please find out technical report on arxiv **TODO** and the model checkpoint on [
 pip install mantis
 ```
 
-### Using poetry
+### Editable mode using poetry
 
 To install poetry on ubuntu, run the following command:
 ```bash
@@ -40,7 +40,7 @@ Then, install the package (in editable mode) with the dependencies by running:
 ```bash
 poetry install
 ```
-If it doesn't work (for example, because of the CUDA version) you can try to re-generate the lock file:
+If it doesn't work for some reason you can try to re-generate the lock file:
 ```bash
 poetry lock
 poetry install
@@ -135,13 +135,10 @@ We would be happy to receive feedback and integrate any suggestion, so do not he
 
  - Vasilii Feofanov - vasilii [dot] feofanov [at] huawei [dot] com
 
-## Credits
-
 
 ## Citing Mantis 📚
 
-If you use DICL in your work, please cite the accompanying
-[paper](https://arxiv.org/abs/2410.11711):
+If you use Mantis in your work, please cite this technical report:
 
 ```bibtex
 @misc{feofanov2024mantis,
