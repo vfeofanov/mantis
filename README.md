@@ -18,11 +18,12 @@ pip install mantis
 
 ### Editable mode using poetry
 
-To install poetry on ubuntu, run the following command:
+First, install poetry and add the path to the binary file to your shell configuration file. 
+For example, on linux systems it can be performed by running the following commands:
 ```bash
 curl -sSL https://install.python-poetry.org | python3 -
+export PATH="/home/username/.local/bin:$PATH"
 ```
-Then, add the path to the binary file (e.g., `export PATH="/home/username/.local/bin:$PATH"`) to your shell configuration file.
 Now you can create a virtual environment that is based on one of your already installed python interpeter.
 For example, if your default python is 3.9, then create the environment by running:
 ```bash
