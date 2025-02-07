@@ -1,3 +1,7 @@
+> [!WARNING]
+> This package is in a phase of the first release preparation. The package can be already used, but some changes may be applied. We appreciate your understanding. 
+> 
+
 # Mantis: Foundation Model with Adapters for Multichannel Time Series Classification
 
 <p align="center">
