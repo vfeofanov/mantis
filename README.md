@@ -20,32 +20,33 @@ Please find out technical report on arxiv (available soon) and the model checkpo
 pip install mantis
 ```
 
-### Editable mode using poetry
+### Editable mode using Poetry
 
-First, install poetry and add the path to the binary file to your shell configuration file. 
-For example, on linux systems it can be performed by running the following commands:
+First, install Poetry and add the path to the binary file to your shell configuration file. 
+For example, on Linux systems, you can do this by running:
 ```bash
 curl -sSL https://install.python-poetry.org | python3 -
 export PATH="/home/username/.local/bin:$PATH"
 ```
-Now you can create a virtual environment that is based on one of your already installed python interpeter.
-For example, if your default python is 3.9, then create the environment by running:
+Now you can create a virtual environment that is based on one of your already installed Python interpreters.
+For example, if your default Python is 3.9, then create the environment by running:
 ```bash
-poetry use env 3.9
+poetry env use 3.9
 ```
-Alternatively, you can give a path to the interpreter, for example, if you want to use Anaconda python interpreter:
+Alternatively, you can specify a path to the interpreter. For example, to use an Anaconda Python interpreter:
 ```bash
 poetry env use /path/to/anaconda3/envs/my_env/bin/python
 ```
-Activate a new shell session within the environment by
+If you want to run any command within the environment, instead of activating the environment manually, you can use `poetry run`:
 ```bash
-poetry shell
+poetry run <command>
 ```
-Then, install the package (in editable mode) with the dependencies by running:
+For example, to install the dependencies and run tests:
 ```bash
 poetry install
+poetry run pytest
 ```
-If it doesn't work for some reason you can try to re-generate the lock file:
+If dependencies are not resolving correctly, try re-generating the lock file:
 ```bash
 poetry lock
 poetry install
