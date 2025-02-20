@@ -1,7 +1,5 @@
 import numpy as np
 
-from sklearn.feature_selection import VarianceThreshold
-
 
 class VarianceBasedSelector:
     """
@@ -17,26 +15,24 @@ class VarianceBasedSelector:
         self.new_num_channels = new_num_channels
         self.support_ = None
         
-    def fit(self, X):
-        # Flatten the tensor to 2D for sklearn compatibility
-        X_transposed = np.swapaxes(X, 1, 2)
+    def fit(self, x):
+        # flatten the tensor to 2D
+        x_transposed = np.swapaxes(x, 1, 2)
+        num_samples, seq_len, num_channels = x_transposed.shape
+        x_2d = x_transposed.reshape(num_samples * seq_len, num_channels)
 
-        num_samples, seq_len, num_channels = X_transposed.shape
-
+        # calculate variances and select top features
+        variances = np.var(x_2d, axis=0)
         
-        X_2d = X_transposed.reshape(num_samples * seq_len, num_channels)
-
-        # Calculate variances and select top features
-        variances = np.var(X_2d, axis=0)
-        # Select top features by variance
+        # select top features by variance
         self.support_ = np.argsort(variances)[::-1][:self.new_num_channels]
         return self.support_
 
-    def transform(self, X):
+    def transform(self, x):
         if self.support_ is None:
             raise RuntimeError("You must call fit at least once before calling transform.")
 
-        # Select features based on precomputed indices
-        selected_features = X[:, self.support_, :]
+        # select features based on precomputed indices
+        selected_features = x[:, self.support_, :]
 
         return selected_features

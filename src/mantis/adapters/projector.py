@@ -36,25 +36,25 @@ class MultichannelProjector:
         else:
             self.base_projector_ = base_projector(n_components=n_components)
 
-    def fit(self, X):
-        X_transposed = np.swapaxes(X, 1, 2)
+    def fit(self, x):
+        x_transposed = np.swapaxes(x, 1, 2)
         
-        num_samples, seq_len, num_channels = X_transposed.shape
+        num_samples, seq_len, num_channels = x_transposed.shape
         num_patches = seq_len // self.patch_window_size
         assert num_patches * self.patch_window_size == seq_len
 
-        X_2d = X_transposed.reshape(num_samples * num_patches, self.patch_window_size * num_channels)
-        return self.base_projector_.fit(X_2d)
+        x_2d = x_transposed.reshape(num_samples * num_patches, self.patch_window_size * num_channels)
+        return self.base_projector_.fit(x_2d)
 
-    def transform(self, X):
-        X_transposed = np.swapaxes(X, 1, 2)
+    def transform(self, x):
+        x_transposed = np.swapaxes(x, 1, 2)
 
-        num_samples, seq_len, num_channels = X_transposed.shape
+        num_samples, seq_len, num_channels = x_transposed.shape
         num_patches = seq_len // self.patch_window_size
         assert num_patches * self.patch_window_size == seq_len
 
-        X_2d = X_transposed.reshape(num_samples * num_patches, self.patch_window_size * num_channels)
+        x_2d = x_transposed.reshape(num_samples * num_patches, self.patch_window_size * num_channels)
 
-        X_transformed = self.base_projector_.transform(X_2d)
-        X_transformed = X_transformed.reshape([num_samples, seq_len, self.new_num_channels])
-        return np.swapaxes(X_transformed, 1, 2)
+        x_transformed = self.base_projector_.transform(x_2d)
+        x_transformed = x_transformed.reshape([num_samples, seq_len, self.new_num_channels])
+        return np.swapaxes(x_transformed, 1, 2)
