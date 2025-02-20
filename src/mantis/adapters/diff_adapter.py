@@ -22,7 +22,11 @@ class LinearChannelCombiner(nn.Module):
         super().__init__()
         self.num_channels = num_channels
         self.new_num_channels = new_num_channels
-        self.reduction_matrix = nn.Parameter(torch.rand(1, new_num_channels, num_channels))
+        self.transformation = nn.Linear(num_channels, new_num_channels)
 
     def forward(self, x):
-        return self.reduction_matrix @ x
+        # transpose time and channel dimensions to apply linear layer
+        x_transposed = x.transpose(1, 2)
+        x_transformed = self.transformation(x_transposed)
+        # return the output transposing back the dimensions
+        return x_transformed.transpose(1, 2)
