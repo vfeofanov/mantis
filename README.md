@@ -1,8 +1,4 @@
-> [!WARNING]
-> This package is in a phase of the first release preparation. The package can be already used, but some changes may be applied. We appreciate your understanding. 
-> 
-
-# Mantis: Foundation Model with Adapters for Multichannel Time Series Classification
+# Mantis: Lightweight Calibrated Foundation Model for User-Friendly Time Series Classification
 
 <p align="center">
   <img src="figures/mantis_logo_white_with_font.png" alt="Logo" height="300"/>
@@ -10,11 +6,17 @@
 
 ## Overview
 
-**MANTIS** (foundation **M**odel with **A**dapters for multicha**N**nel **TI**me **S**eries Classification) is an open-source python package with a pre-trained time series classification foundation model implemented by Huawei Noah's Ark Lab.
+**MANTIS** is an open-source python package with a pre-trained time series classification foundation model implemented by Huawei Noah's Ark Lab.
 
 Please find out technical report on arxiv (available soon) and the model checkpoint on [Hugging Face](https://huggingface.co/paris-noah/Mantis-8M).
 
 ## Installation
+
+### Pip installation 
+
+> [!WARNING]
+> The package will be released to PyPI very soon. Meanwhile, please use editable mode intallation given below.
+> 
 
 ```
 pip install mantis
