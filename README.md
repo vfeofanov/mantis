@@ -8,7 +8,7 @@
 
 **MANTIS** is an open-source python package with a pre-trained time series classification foundation model implemented by Huawei Noah's Ark Lab.
 
-Please find out technical report on arxiv (available soon) and the model checkpoint on [Hugging Face](https://huggingface.co/paris-noah/Mantis-8M).
+Please find out technical report on [arxiv](https://arxiv.org/abs/2502.15637) and the model checkpoint on [Hugging Face](https://huggingface.co/paris-noah/Mantis-8M).
 
 ## Installation
 
