@@ -149,13 +149,10 @@ We would be happy to receive feedback and integrate any suggestion, so do not he
 If you use Mantis in your work, please cite this technical report:
 
 ```bibtex
-@misc{feofanov2024mantis,
-      title={TODO}, 
-      author={TODO},
-      year={2024},
-      eprint={TODO},
-      archivePrefix={arXiv},
-      primaryClass={stat.ML},
-      url={TODO}, 
+@article{feofanov2025mantis,
+  title={Mantis: Lightweight Calibrated Foundation Model for User-Friendly Time Series Classification},
+  author={Vasilii Feofanov and Songkang Wen and Marius Alonso and Romain Ilbert and Hongbo Guo and Malik Tiomoko and Lujia Pan and Jianfeng Zhang and Ievgen Redko},
+  journal={arXiv preprint arXiv:2502.15637},
+  year={2025},
 }
 ```
