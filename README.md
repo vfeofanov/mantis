@@ -15,6 +15,12 @@ The key features are:
  - *Calibration:* In our studies, we have shown that Mantis is the most calibrated foundation model for classification so far.
  - *Adaptable to large-scale datasets:* For datasets with a large number of channels, we propose additional adapters that reduce memory requirements.
 
+<p align="center">
+  <img src="figures/zero-shot-exp-results.png" alt="Logo" height="300"/> 
+  
+  <img src="figures/fine-tuning-exp-results.png" alt="Logo" height="300"/>
+</p>
+
 Please find out technical report on [arXiv](https://arxiv.org/abs/2502.15637). Our pre-trained weights can be found on [Hugging Face](https://huggingface.co/paris-noah/Mantis-8M).
 Below we give instructions how the package can be installed and used.
 
