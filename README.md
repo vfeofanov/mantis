@@ -6,12 +6,12 @@
 
 ## Overview
 
-**Mantis** is an open-source, pre-trained time series classification foundation model implemented by [Huawei Noah's Ark Lab](https://huggingface.co/paris-noah).
+**Mantis** is an open-source time series classification foundation model implemented by [Huawei Noah's Ark Lab](https://huggingface.co/paris-noah).\
 The key features are:
 
  - *Zero-shot feature extraction:* The model can be used in a frozen state to extract deep features and train a classifier on them.
  - *Fine-tuning:* To achieve the highest performance, the model can be further fine-tuned for a new task.
- - *Lightweight:* The model contains 8 million parameters, which allows it to be fine-tuned on a single GPU. It is even possible to fine-tune on a CPU!
+ - *Lightweight:* The model contains 8 million parameters, which allows it to be fine-tuned on a single GPU (even feasible on a CPU).
  - *Calibration:* In our studies, we have shown that Mantis is the most calibrated foundation model for classification so far.
  - *Adaptable to large-scale datasets:* For datasets with a large number of channels, we propose additional adapters that reduce memory requirements.
 
