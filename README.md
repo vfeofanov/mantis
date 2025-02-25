@@ -28,13 +28,12 @@ Below we give instructions how the package can be installed and used.
 
 ### Pip installation 
 
-> [!WARNING]
-> The package will be released to PyPI very soon. Meanwhile, please use editable mode intallation given below.
-> 
+It can be installed via `pip` by running:
 
 ```
-pip install mantis
+pip install mantis-tsfm
 ```
+The requirements can be verified at [`pyproject.toml`](pyproject.toml)
 
 ### Editable mode using Poetry
 
@@ -71,7 +70,7 @@ poetry install
 
 ## Getting started
 
-Please refer to `getting_started/` folder to see reproducible examples of how the package can be used.
+Please refer to [`getting_started/`](getting_started/) folder to see reproducible examples of how the package can be used.
 
 Below we summarize the basic commands needed to use the package.
 
