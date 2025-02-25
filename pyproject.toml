@@ -1,19 +1,20 @@
 [tool.poetry]
 name = "mantis"
 version = "0.1.0"
-description = "A Foundation Model with Adapters for Multichannel Time Series Classification"
+description = "Mantis: Lightweight Calibrated Foundation Model for User-Friendly Time Series Classification"
 authors = [
-    "Vasilii Feofanov <vasilii.feofanov@gmail.com>",
-    "Songkang Wen <wensongkang@huawei.com>",
-    "Romain Ilbert <romain.ilbert@hotmail.fr>",
-    "Hongbo Guo <guohongbo4@huawei.com>",
-    "Malik Tiomoko <malik.tiomoko@huawei.com>",
-    "Lujia Pan <panlujia@huawei.com>",
-    "Ievgen Redko <ievgen.redko@huawei.com>",
-    "Jianfeng Zhang <zhangjianfeng3@huawei.com>",
+    "Vasilii Feofanov <vasilii.feofanov@huawei.com>",
+    "Songkang Wen",
+    "Marius Alonso",
+    "Romain Ilbert",
+    "Hongbo Guo",
+    "Malik Tiomoko",
+    "Lujia Pan",
+    "Jianfeng Zhang",
+    "Ievgen Redko",
 ]
 maintainers = [
-  "Vasilii Feofanov <vasilii.feofanov@gmail.com>",
+  "Vasilii Feofanov <vasilii.feofanov@huawei.com>",
 ]
 license = "MIT"
 readme = "README.md"
