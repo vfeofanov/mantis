@@ -49,3 +49,7 @@ pytest = ">=7.1,<9.0"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.packages]
+from = "src"
+include = ["mantis"]
