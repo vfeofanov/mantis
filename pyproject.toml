@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "mantis"
+name = "mantis-tsfm"
 version = "0.1.0"
 description = "Mantis: Lightweight Calibrated Foundation Model for User-Friendly Time Series Classification"
 authors = [
