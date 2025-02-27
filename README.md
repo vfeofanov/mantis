@@ -7,6 +7,7 @@
 ## Overview
 
 **Mantis** is an open-source time series classification foundation model implemented by [Huawei Noah's Ark Lab](https://huggingface.co/paris-noah).\
+The paper can be found on [arXiv](https://arxiv.org/abs/2502.15637) while pre-trained weights are stored on [Hugging Face](https://huggingface.co/paris-noah/Mantis-8M).
 The key features are:
 
  - *Zero-shot feature extraction:* The model can be used in a frozen state to extract deep features and train a classifier on them.
@@ -21,7 +22,6 @@ The key features are:
   <img src="figures/fine-tuning-exp-results.png" alt="Logo" height="300"/>
 </p>
 
-Please find out technical report on [arXiv](https://arxiv.org/abs/2502.15637). Our pre-trained weights can be found on [Hugging Face](https://huggingface.co/paris-noah/Mantis-8M).
 Below we give instructions how the package can be installed and used.
 
 ## Installation
