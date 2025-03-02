@@ -1,9 +1,0 @@
-einops
-huggingface_hub
-numpy
-pandas
-scikit-learn
-setuptools
-torch
-tqdm
-safetensors
