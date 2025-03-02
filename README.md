@@ -1,8 +1,19 @@
 # Mantis: Lightweight Calibrated Foundation Model for User-Friendly Time Series Classification
 
-<p align="center">
+<div align="center">
+  
+[![PyPI](https://img.shields.io/badge/PyPI-0.1.0-blue)](https://pypi.org/project/mantis-tsfm/)
+[![preprint](https://img.shields.io/static/v1?label=arXiv&message=2502.15637&color=B31B1B&logo=arXiv)](https://arxiv.org/abs/2502.15637)
+[![huggingface](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Checkpoint-FFD21E)](https://huggingface.co/paris-noah/Mantis-8M)
+[![License: MIT](https://img.shields.io/badge/License-MIT-65A938)](https://opensource.org/license/MIT)
+[![Python](https://img.shields.io/badge/Python-3.9|3.10|3.11|3.12-blue)]()
+
+
+<!-- <p align="center">  -->
   <img src="figures/mantis_logo_white_with_font.png" alt="Logo" height="300"/>
-</p>
+<!-- </p> -->
+</div>
+
 
 ## Overview
 
