@@ -160,7 +160,7 @@ model.fit(X, y, adapter=adapter, fine_tuning_type='adapter_head')
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
+This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for more details.
 
 ## Open-source Participation
 
