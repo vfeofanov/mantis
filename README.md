@@ -86,6 +86,20 @@ Please refer to [`getting_started/`](getting_started/) folder to see reproducibl
 
 Below we summarize the basic commands needed to use the package.
 
+### Prepare Data.
+
+As an input, Mantis accepts any time series with sequence length **proportional** to 32, which corresponds to the number of tokens fixed in our model. 
+We found that resizing time series via interpolation is generally a good choice:
+``` python
+import torch
+import torch.nn.functional as F
+
+def resize(X):
+    X_scaled = F.interpolate(torch.tensor(X, dtype=torch.float), size=512, mode='linear', align_corners=False)
+    return X_scaled.numpy()
+```
+Generally speaking, the interpolation size is a hyperparameter to play with. Nevertheless, since Mantis was pre-trained on sequences of length 512, interpolating to this length looks reasonable in most of cases.
+
 ### Initialization.
 
 To load our pre-trained model with 8M parameters from the Hugging Face, it is sufficient to run:
