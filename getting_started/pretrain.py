@@ -1,3 +1,8 @@
+"""
+To run this file on 4 GPUs, use the following command:
+``python -m torch.distributed.run --nproc_per_node=4 --nnodes=1 pretrain.py --seed 42``
+"""
+
 import argparse
 import random
 import torch
@@ -88,18 +93,21 @@ if __name__ == "__main__":
     if rank == 0:
         print("Starting to pre-train")
         # if file_name is not None, create absent folders in the path
-        dir_path = os.path.dirname(file_name)
-        os.makedirs(dir_path, exist_ok=True)
+        if file_name is not None:
+            dir_path = os.path.dirname(file_name)
+            if dir_path != "":
+                os.makedirs(dir_path, exist_ok=True)
 
     model.pretrain(
         X_train,
         num_epochs=100,                 # Adjust the number of epochs as needed
         batch_size=512,                 # Adjust batch size based on GPU memory
-        learning_rate=2e-3,             # Initial learning rate
+        base_learning_rate=2e-3,        # Initial learning rate
         data_parallel=True,             # Enable distributed data parallelism
         learning_rate_adjusting=True,   # Cosine annealing
         file_name=file_name             # Where to save the final checkpoint
     )
+    # if the checkpoint was saved, you can load it later by ``model.load('file_name')``
 
     if rank == 0:
         print("Pre-training is finished")

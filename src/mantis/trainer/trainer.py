@@ -1,10 +1,12 @@
 import torch
+
 import numpy as np
+import torch.distributed as dist
 
 from tqdm import tqdm
 from copy import deepcopy
 from itertools import chain
-from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data import DataLoader, TensorDataset, DistributedSampler
 from torch import nn
 
 from ..architecture import Mantis8M
@@ -36,7 +38,7 @@ class MantisTrainer:
                                transf_dim_head=128, transf_dropout=0.1, device=device, pre_training=False)
         self.network = network.to(device)
 
-    def pretrain(self, x, num_epochs=100, batch_size=512, learning_rate=2e-3, init_optimizer=None, criterion=None, 
+    def pretrain(self, x, num_epochs=100, batch_size=512, base_learning_rate=2e-3, init_optimizer=None, criterion=None, 
                  augmentation_1=None, augmentation_2=None, data_parallel=True, learning_rate_adjusting=True, 
                  file_name=None):
         """
@@ -144,7 +146,7 @@ class MantisTrainer:
                 avg_loss_in_epoch = np.mean(loss_list)
                 progress_bar.set_description("Epoch {:d}: Train Loss {:.4f}".format(epoch, avg_loss_in_epoch), refresh=True)
         # save the last epoch model
-        if rank == 0:
+        if rank == 0 and file_name is not None:
             self.save(file_name, data_parallel=data_parallel)
         return self.network
 
@@ -387,7 +389,10 @@ class MantisTrainer:
         data_parallel: bool, default=True 
             Whether the network is wrapped into DistributedDataParallel.
         """
-        checkpoint = network.module.state_dict() if data_parallel else network.state_dict()
+        if data_parallel:
+            checkpoint = self.network.module.state_dict()
+        else:
+            checkpoint = self.network.state_dict()
         torch.save(checkpoint, file_path)
     
     def load(self, file_path):
@@ -403,7 +408,7 @@ class MantisTrainer:
         -------
         self after loading parameters
         """
-        model_params = torch.load(file_path)
+        model_params = torch.load(file_path, weights_only=True)
         self.network.load_state_dict(model_params)
         return self
 
