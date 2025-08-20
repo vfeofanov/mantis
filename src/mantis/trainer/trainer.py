@@ -7,10 +7,12 @@ from itertools import chain
 from torch.utils.data import DataLoader, TensorDataset
 from torch import nn
 
-from mantis.architecture import Mantis8M
+from ..architecture import Mantis8M
 
 from .trainer_utils.architecture import FineTuningNetwork
-from .trainer_utils.dataset import LabeledDataset
+from .trainer_utils.dataset import LabeledDataset, UnlabeledDataset
+from .trainer_utils.criterion import ContrastiveLoss
+from .trainer_utils.augmentation import RandomCropResize
 from .trainer_utils.scheduling import adjust_learning_rate
 
 
@@ -30,9 +32,121 @@ class MantisTrainer:
         self.device = device
         if network is None:
             network = Mantis8M(seq_len=512, hidden_dim=256, num_patches=32, scalar_scales=None, hidden_dim_scalar_enc=32,
-                             epsilon_scalar_enc=1.1, transf_depth=6, transf_num_heads=8, transf_mlp_dim=512,
-                             transf_dim_head=128, transf_dropout=0.1, device=device, pre_training=False)
+                               epsilon_scalar_enc=1.1, transf_depth=6, transf_num_heads=8, transf_mlp_dim=512,
+                               transf_dim_head=128, transf_dropout=0.1, device=device, pre_training=False)
         self.network = network.to(device)
+
+    def pretrain(self, x, num_epochs=100, batch_size=512, learning_rate=2e-3, init_optimizer=None, criterion=None, 
+                 augmentation_1=None, augmentation_2=None, data_parallel=True, learning_rate_adjusting=True, 
+                 file_name=None):
+        """
+        Pre-train the foundation model using contrastive learning.
+
+        Parameters
+        ----------
+        x: array-like of shape (n_samples, 1, seq_len)
+            The input samples. ``seq_len`` must be the multiple of ``self.num_patches``.
+        num_epochs: int, default=100
+            Number of training epochs.
+        batch_size: int, default=512
+            Batch size. If data_parallel is set to ``True``, it refers to the batch size at each GPU.
+        base_learning_rate: float, default=2e-3
+            Learning rate that optimizer starts from. If ``learning_rate_adjusting`` is ``False``,
+            it remains to be fixed
+        init_optimizer: callable, default=None
+            Function that initializes the optimizer. By default, ``AdamW`` 
+            with pre-defined hyperparameters (except the learning rate) is used.
+        criterion: nn.Module, default=None
+            Learning criterion. By default, ``ContrastiveLoss`` with ``temperature=0.1`` is used.
+        augmentation_1: nn.Module, default=None
+            Augmentation function used to create the 1st view of a time series for contrastive learning.
+            By default, ``RandomCropResize`` with ``crop_rate_range=[0, 0.2]`` and ``size=512`` is used.
+        augmentation_2: nn.Module, default=None
+            Augmentation function used to create the 2nd view of a time series for contrastive learning.
+            By default, ``RandomCropResize`` with ``crop_rate_range=[0, 0.2]`` and ``size=512`` is used.
+        data_parallel: bool, default=True
+            Whether data parallelism is used
+        learning_rate_adjusting: bool, default=True
+            Whether to use the implemented scheduling scheme.
+        file_name: str, default=None
+            Refers to the name of file, which will be used to save the model checkpoint.
+            If None, saving is not performed.
+        
+        Returns
+        -------
+        self.network: nn.Module
+            The pre-trained network.
+        """
+
+        # set DistributedDataParallel
+        if data_parallel:
+            self.network = nn.SyncBatchNorm.convert_sync_batchnorm(self.network)
+            gpu_index = self.device.index if self.device.type == "cuda" else None
+            devices_ids = [gpu_index] if gpu_index is not None else None
+            self.network = nn.parallel.DistributedDataParallel(self.network, device_ids=devices_ids, find_unused_parameters=False)
+
+        # init dataset, sampler and dataloader
+        train_dataset = UnlabeledDataset(x)
+        sampler = DistributedSampler(train_dataset) if data_parallel else None
+        data_loader = DataLoader(train_dataset, sampler=sampler, batch_size=batch_size)
+
+        # init loss function
+        if criterion is None:
+            criterion = ContrastiveLoss(temperature=0.1, device=self.device)
+        
+        # init the 1st augmentation function
+        if augmentation_1 is None:
+            augmentation_1 = RandomCropResize(crop_rate_range=[0, 0.2], size=512)
+
+        # init the 2nd augmentation function
+        if augmentation_2 is None:
+            augmentation_2 = RandomCropResize(crop_rate_range=[0, 0.2], size=512)
+        
+        # init optimizer by init_optimizer
+        if init_optimizer is None:
+            optimizer = torch.optim.AdamW(
+                self.network.parameters(), lr=base_learning_rate, betas=(0.9, 0.999), weight_decay=0.05)
+        else:
+            optimizer = init_optimizer(parameters)
+
+        # get rank of gpu
+        rank = dist.get_rank() if (data_parallel and dist.is_initialized()) else 0
+        
+        self.network.train()
+
+        progress_bar = tqdm(range(num_epochs))
+        step = 0
+        # ==== training loop ====
+        for epoch in progress_bar:
+            loss_list = []
+            for x_batch in data_loader:
+                # adjust learning rate
+                if learning_rate_adjusting:
+                    adjust_learning_rate(
+                        num_epochs, optimizer, data_loader, step, base_learning_rate)
+                # read data
+                x_batch = x_batch.to(self.device)
+                step += 1
+                # create 2 augmentations of the batch
+                x_augmented_1 = augmentation_1(x_batch).to(self.device)
+                x_augmented_2 = augmentation_2(x_batch).to(self.device)
+                # forward
+                out_1 = self.network(x_augmented_1)
+                out_2 = self.network(x_augmented_2)
+                loss = criterion(out_1, out_2)
+                # backward
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+                loss_list.append(loss.item())
+            # report average loss over all batches
+            if rank == 0:
+                avg_loss_in_epoch = np.mean(loss_list)
+                progress_bar.set_description("Epoch {:d}: Train Loss {:.4f}".format(epoch, avg_loss_in_epoch), refresh=True)
+        # save the last epoch model
+        if rank == 0:
+            self.save(file_name, data_parallel=data_parallel)
+        return self.network
 
     def fit(self, x, y, fine_tuning_type='full', adapter=None, head=None, num_epochs=500, batch_size=256,
             base_learning_rate=2e-4, init_optimizer=None, criterion=None, learning_rate_adjusting=True):
@@ -43,7 +157,7 @@ class MantisTrainer:
         ----------
         x: array-like of shape (n_samples, n_channels, seq_len)
             The input samples. If data is univariate case, the shape should be ``(n_samples, 1, seq_len)``.
-            ``seq_len`` should correspond to ``self.network.seq_len``.
+            ``seq_len`` must be the multiple of ``self.num_patches``.
         y: array-like of shape (n_samples,)
             The class labels with the following unique_values: ``[i for i in range(n_classes)]``
         fine_tuning_type: {'full', 'adapter_head', 'head', 'scratch'}, default='full'
@@ -157,7 +271,7 @@ class MantisTrainer:
         ----------
         x: array-like of shape (n_samples, n_channels, seq_len)
             The input samples. If data is univariate case, the shape should be (n_samples, 1, seq_len).
-            ``seq_len`` should correspond to ``self.network.seq_len``. In the multivariate case, each channel is sent
+            ``seq_len`` must be the multiple of ``self.num_patches``. In the multivariate case, each channel is sent
             independently to the foundation model.
         batch_size: int, default=256
             To fit memory, the data matrix is split into the chunks for inference. ``batch_size`` corresponds to
@@ -212,7 +326,7 @@ class MantisTrainer:
         ----------
         x: array-like of shape (n_samples, n_channels, seq_len)
             The input samples. If data is univariate case, the shape should be (n_samples, 1, seq_len).
-            ``seq_len`` should correspond to ``self.network.seq_len``.
+            ``seq_len`` must be the multiple of ``self.num_patches``.
         batch_size: int, default=256
             To fit memory, the data matrix is split into the chunks for inference. ``batch_size`` corresponds to
             the chunk size.
@@ -247,7 +361,7 @@ class MantisTrainer:
         ----------
         x: array-like of shape (n_samples, n_channels, seq_len)
             The input samples. If data is univariate case, the shape should be (n_samples, 1, seq_len).
-            ``seq_len`` should correspond to ``self.network.seq_len``.
+            ``seq_len`` must be the multiple of ``self.num_patches``.
         batch_size: int, default=256
             To fit memory, the data matrix is split into the chunks for inference. ``batch_size`` corresponds to
             the chunk size.
@@ -261,6 +375,37 @@ class MantisTrainer:
         """
         probs = self.predict_proba(x, batch_size=batch_size, to_numpy=to_numpy)
         return probs.argmax(axis=1)
+
+    def save(self, file_path, data_parallel=True):
+        """
+        Save the trained model to a file.
+
+        Parameters
+        ----------
+        file_path: str 
+            The file path to save the model.
+        data_parallel: bool, default=True 
+            Whether the network is wrapped into DistributedDataParallel.
+        """
+        checkpoint = network.module.state_dict() if data_parallel else network.state_dict()
+        torch.save(checkpoint, file_path)
+    
+    def load(self, file_path):
+        """
+        Load the model from a file.
+
+        Parameters
+        ----------
+        file_path: str
+            The checkpoint file path to load.
+
+        Returns
+        -------
+        self after loading parameters
+        """
+        model_params = torch.load(file_path)
+        self.network.load_state_dict(model_params)
+        return self
 
     def _prepare_dataloader_for_inference(self, x, batch_size):
         if isinstance(x, torch.Tensor):
