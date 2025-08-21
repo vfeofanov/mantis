@@ -14,7 +14,9 @@
 <!-- </p> -->
 </div>
 
+<div align="center">
 **NEW Version 0.2.0: Mantis pre-training is now available!**
+</div>
 
 ## Overview
 
