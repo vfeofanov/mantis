@@ -13,6 +13,7 @@
 </div>
 
 <br>
+
 > **🚨 NEW Version 0.2.0: Mantis pre-training is now available! 🚨**
 
 ## Overview
