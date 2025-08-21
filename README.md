@@ -9,12 +9,10 @@
 [![Python](https://img.shields.io/badge/Python-3.9|3.10|3.11|3.12-blue)]()
 
 
-<!-- <p align="center">  -->
   <img src="figures/mantis_logo_white_with_font.png" alt="Logo" height="300"/>
-<!-- </p> -->
 </div>
 
-<br><br>
+<br>
 > **🚨 NEW Version 0.2.0: Mantis pre-training is now available! 🚨**
 
 ## Overview
