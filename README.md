@@ -9,7 +9,7 @@
 [![Python](https://img.shields.io/badge/Python-3.9|3.10|3.11|3.12-blue)]()
 
 
-  <img src="figures/mantis_logo_white_with_font.png" alt="Logo" height="300"/>
+<img src="figures/mantis_logo_white_with_font.png" alt="Logo" height="300"/>
 </div>
 
 <br>
