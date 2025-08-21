@@ -14,6 +14,7 @@
 <!-- </p> -->
 </div>
 
+**NEW Version 0.2.0: Mantis pre-training is now available!**
 
 ## Overview
 
@@ -158,6 +159,15 @@ from mantis.adapters import LinearChannelCombiner
 model = MantisTrainer(device='cuda', network=network)
 adapter = LinearChannelCombiner(num_channels=X.shape[1], new_num_channels=5)
 model.fit(X, y, adapter=adapter, fine_tuning_type='adapter_head')
+```
+
+### Pre-training.
+
+The model can be pre-trained using the `pretrain` method of `MantisTrainer` that supports data parallelization. You can see a pre-training demo at `getting_started/pretrain.py`.
+For example, to pre-train the model on 4 GPUs, you can run the following commands:
+```
+cd getting_started/
+python -m torch.distributed.run --nproc_per_node=4 --nnodes=1 pretrain.py --seed 42
 ```
 
 ## Structure
