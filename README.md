@@ -17,7 +17,7 @@
 <!-- <div align="center">
 <strong>NEW Version 0.2.0: Mantis pre-training is now available!</strong>
 </div> -->
-<span style="background-color: yellow; padding:3px;"><strong>🚨 NEW Version 0.2.0: Mantis pre-training is now available! 🚨</strong></span>
+> **🚨 NEW Version 0.2.0: Mantis pre-training is now available! 🚨**
 
 ## Overview
 
