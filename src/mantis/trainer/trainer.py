@@ -8,6 +8,7 @@ from copy import deepcopy
 from itertools import chain
 from torch.utils.data import DataLoader, TensorDataset, DistributedSampler
 from torch import nn
+from datasets.arrow_dataset import Dataset
 
 from ..architecture import Mantis8M
 
@@ -88,7 +89,10 @@ class MantisTrainer:
             self.network = nn.parallel.DistributedDataParallel(self.network, device_ids=devices_ids, find_unused_parameters=False)
 
         # init dataset, sampler and dataloader
-        train_dataset = UnlabeledDataset(x)
+        if type(x) == Dataset:
+            train_dataset = x
+        else:
+            train_dataset = UnlabeledDataset(x)
         sampler = DistributedSampler(train_dataset) if data_parallel else None
         data_loader = DataLoader(train_dataset, sampler=sampler, batch_size=batch_size)
 
@@ -127,7 +131,7 @@ class MantisTrainer:
                     adjust_learning_rate(
                         num_epochs, optimizer, data_loader, step, base_learning_rate)
                 # read data
-                x_batch = x_batch.to(self.device)
+                x_batch = x_batch['data'].to(self.device)
                 step += 1
                 # create 2 augmentations of the batch
                 x_augmented_1 = augmentation_1(x_batch).to(self.device)

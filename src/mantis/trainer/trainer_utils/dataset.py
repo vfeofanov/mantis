@@ -35,4 +35,4 @@ class UnlabeledDataset(Dataset):
 
     def __getitem__(self, idx):
         examples = self.x[idx]
-        return examples
+        return {'data': examples}
