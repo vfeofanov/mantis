@@ -38,7 +38,8 @@ packages = [
 [tool.poetry.dependencies]
 python = "^3.9"
 einops = "^0.8"
-huggingface-hub = "^0.23"
+huggingface-hub = ">=0.23"
+datasets = ">=4.0"
 numpy = ">=1.23,<3.0"
 pandas = ">=1.5,<3.0"
 scikit-learn = "^1.2"
