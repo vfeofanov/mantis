@@ -6,16 +6,18 @@ from huggingface_hub import PyTorchModelHubMixin
 
 from .tokgen_utils.convolution import Convolution
 from .tokgen_utils.encoders import MultiScaledScalarEncoder, LinearEncoder
-from .vit_utils.positional_encoding import PositionalEncoding
-from .vit_utils.transformer import Transformer
+from .transformer_v1_utils.positional_encoding import PositionalEncoding
+from .transformer_v1_utils.transformer import Transformer
 
 
 # ==================================
 # ====       Organization:      ====
 # ==================================
 # ==== class TokenGeneratorUnit ====
-# ==== class ViTUnit            ====
-# ==== class Mantis8M           ====
+# ==== class TransformerUnit    ====
+# ==== class ViTUnit (legacy)   ====
+# ==== class MantisV1           ====
+# ==== class Mantis8M (legacy)  ====
 # ==================================
 
 
@@ -103,7 +105,7 @@ class TokenGeneratorUnit(nn.Module):
         return x_embeddings
 
 
-class ViTUnit(nn.Module):
+class TransformerUnit(nn.Module):
     def __init__(self, hidden_dim, num_patches, depth, heads, mlp_dim, dim_head, dropout, device):
         super().__init__()
         self.pos_encoder = PositionalEncoding(
@@ -123,7 +125,28 @@ class ViTUnit(nn.Module):
         return cls_tokens.reshape(cls_tokens.shape[0], -1)
 
 
-class Mantis8M(
+class ViTUnit(nn.Module):
+    """Legacy class name for TransformerUnit. Maintains backward compatibility."""
+    def __init__(self, hidden_dim, num_patches, depth, heads, mlp_dim, dim_head, dropout, device):
+        super().__init__()
+        self.pos_encoder = PositionalEncoding(
+            d_model=hidden_dim, dropout=dropout, max_len=num_patches+1)
+        self.cls_token = nn.Parameter(torch.randn(hidden_dim).to(device))
+        self.transformer = Transformer(
+            hidden_dim, depth, heads, dim_head, mlp_dim, dropout)
+
+    def forward(self, x):
+        b, n, _ = x.shape
+        cls_tokens = repeat(self.cls_token, 'd -> b d', b=b)
+        x_embeddings, ps = pack([cls_tokens, x], 'b * d')
+        x_embeddings = self.pos_encoder(
+            x_embeddings.transpose(0, 1)).transpose(0, 1)
+        x_embeddings = self.transformer(x_embeddings)
+        cls_tokens, _ = unpack(x_embeddings, ps, 'b * d')
+        return cls_tokens.reshape(cls_tokens.shape[0], -1)
+
+
+class MantisV1(
     nn.Module,
     PyTorchModelHubMixin,
     # optionally, you can add metadata which gets pushed to the model card
@@ -155,19 +178,19 @@ class Mantis8M(
         A constant term used to tolerate the computational error in computation of scale weights for
         MultiScaledScalarEncoder in TokenGeneratorUnit.
     transf_depth: int, default=6
-        Number of transformer layers used for Transformer in ViTUnit.
+        Number of transformer layers used for Transformer in TransformerUnit.
     transf_num_heads: int, default=8
-        Number of self-attention heads used for Transformer in ViTUnit.
+        Number of self-attention heads used for Transformer in TransformerUnit.
     transf_mlp_dim: int, default=512
-        Hidden dimension of the MLP (feed-forward) transformer's part used for Transformer in ViTUnit.
+        Hidden dimension of the MLP (feed-forward) transformer's part used for Transformer in TransformerUnit.
     transf_dim_head: int, default=128
-        Hidden dimension of the keys, queries and values used for Transformer in ViTUnit.
+        Hidden dimension of the keys, queries and values used for Transformer in TransformerUnit.
     transf_dropout: froat, default=0.1
-        Dropout value used for Transformer in ViTUnit.
+        Dropout value used for Transformer in TransformerUnit.
     device: {'cpu', 'cuda'}, default='cuda'
         On which device the model is located.
     pre_training: bool, default=False
-        If True, applies an MLP projector after the ViTUnit, which originally was used to pre-train the model using
+        If True, applies an MLP projector after the TransformerUnit, which originally was used to pre-train the model using
         InfoNCE contrastive loss.
     """
 
@@ -194,6 +217,114 @@ class Mantis8M(
                                               scalar_scales=scalar_scales,
                                               hidden_dim_scalar_enc=hidden_dim_scalar_enc,
                                               epsilon_scalar_enc=epsilon_scalar_enc)
+        self.transf_unit = TransformerUnit(hidden_dim=hidden_dim, num_patches=num_patches, depth=transf_depth,
+                                           heads=transf_num_heads, mlp_dim=transf_mlp_dim, dim_head=transf_dim_head,
+                                           dropout=transf_dropout, device=device)
+
+        self.prj = nn.Sequential(
+            nn.LayerNorm(self.hidden_dim),
+            nn.Linear(self.hidden_dim, self.hidden_dim)
+        )
+
+        self.to(device)
+
+    @property
+    def vit_unit(self):
+        """Backward compatibility property for old ViTUnit name."""
+        return self.transf_unit
+    
+    @vit_unit.setter
+    def vit_unit(self, value):
+        """Backward compatibility setter for old ViTUnit name."""
+        self.transf_unit = value
+
+    def to(self, device):
+        self.device = device
+        return super().to(device)
+
+    def forward(self, x):
+        x_embeddings = self.tokgen_unit(x)
+        transf_out = self.transf_unit(x_embeddings)
+        if self.pre_training:
+            return self.prj(transf_out)
+        else:
+            return transf_out
+
+    @classmethod
+    def from_pretrained(cls, *args, **kwargs):
+        """
+        Load a model from HuggingFace Hub with backward compatibility.
+        
+        This method handles the renaming of 'vit_unit' to 'transf_unit' and
+        'ViTUnit' to 'TransformerUnit' when loading checkpoints that were
+        saved with the old naming convention.
+        """
+        # Call parent's from_pretrained
+        model = super().from_pretrained(*args, **kwargs)
+        
+        # Handle backward compatibility: rename vit_unit to transf_unit if it exists
+        if hasattr(model, 'vit_unit') and not hasattr(model, 'transf_unit'):
+            model.transf_unit = model.vit_unit
+            delattr(model, 'vit_unit')
+        
+        # Handle module renaming in state dict (for checkpoints with old structure)
+        state_dict = model.state_dict()
+        new_state_dict = {}
+        for key, value in state_dict.items():
+            # Rename vit_unit to transf_unit in state dict keys
+            new_key = key.replace('vit_unit', 'transf_unit')
+            new_state_dict[new_key] = value
+        
+        # Only reload if we made changes
+        if new_state_dict != state_dict:
+            model.load_state_dict(new_state_dict, strict=False)
+        
+        return model
+
+
+class Mantis8M(
+    nn.Module,
+    PyTorchModelHubMixin,
+    library_name="mantis",
+    repo_url="https://huggingface.co/paris-noah/Mantis-8M/tree/main",
+    pipeline_tag="time-series-foundation-model",
+    license="mit",
+    tags=["time-series-foundation-model"],
+):
+    """
+    Legacy class name for MantisV1. Maintains exact backward compatibility
+    with old code expecting Mantis8M and ViTUnit module names.
+    
+    This class is functionally identical to MantisV1 but uses the old naming
+    convention for internal modules (vit_unit instead of transf_unit).
+    
+    For new code, use MantisV1 instead.
+    """
+
+    def __init__(self, seq_len=512, hidden_dim=256, num_patches=32, scalar_scales=None, hidden_dim_scalar_enc=32,
+                 epsilon_scalar_enc=1.1, transf_depth=6, transf_num_heads=8, transf_mlp_dim=512, transf_dim_head=128,
+                 transf_dropout=0.1, device='cuda', pre_training=False):
+
+        super().__init__()
+        assert (seq_len % num_patches) == 0, print(
+            'Seq_len must be the multiple of num_patches')
+        patch_window_size = int(seq_len / num_patches)
+
+        self.hidden_dim = hidden_dim
+        self.num_patches = num_patches
+        self.scalar_scales = scalar_scales
+        self.hidden_dim_scalar_enc = hidden_dim_scalar_enc
+        self.epsilon_scalar_enc = epsilon_scalar_enc
+        self.seq_len = seq_len
+        self.pre_training = pre_training
+
+        self.tokgen_unit = TokenGeneratorUnit(hidden_dim=hidden_dim,
+                                              num_patches=num_patches,
+                                              patch_window_size=patch_window_size,
+                                              scalar_scales=scalar_scales,
+                                              hidden_dim_scalar_enc=hidden_dim_scalar_enc,
+                                              epsilon_scalar_enc=epsilon_scalar_enc)
+        # Use old naming: vit_unit instead of transf_unit
         self.vit_unit = ViTUnit(hidden_dim=hidden_dim, num_patches=num_patches, depth=transf_depth,
                                 heads=transf_num_heads, mlp_dim=transf_mlp_dim, dim_head=transf_dim_head,
                                 dropout=transf_dropout, device=device)
@@ -216,3 +347,15 @@ class Mantis8M(
             return self.prj(vit_out)
         else:
             return vit_out
+
+    @classmethod
+    def from_pretrained(cls, *args, **kwargs):
+        """
+        Load a model from HuggingFace Hub with backward compatibility.
+        
+        Loads old checkpoints that use the 'vit_unit' naming.
+        """
+        # Call parent's from_pretrained
+        model = super().from_pretrained(*args, **kwargs)
+        
+        return model

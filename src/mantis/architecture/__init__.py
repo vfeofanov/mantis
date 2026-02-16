@@ -1,8 +1,6 @@
 """Init file for architecture.""" 
 
-from .version1 import Mantis8M
+from .version1 import MantisV1, Mantis8M
 from .version2 import MantisV2
 
-MantisV1 = Mantis8M
-
-__all__ = ["Mantis8M", "MantisV1", "MantisV2"]
+__all__ = ["MantisV1", "Mantis8M", "MantisV2"]
