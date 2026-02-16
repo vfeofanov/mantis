@@ -8,41 +8,45 @@ The model has been renamed from `Mantis8M` to `MantisV1` and the internal transf
 
 ### New Code (Recommended)
 ```python
-from mantis.architecture import MantisV1, TransformerUnit
+from mantis.architecture import MantisV1
 
 # Create new model
-model = MantisV1(seq_len=512, hidden_dim=256)
+network = MantisV1(seq_len=512, hidden_dim=256)
 
 # Load from HuggingFace (even old checkpoints with ViTUnit inside)
-model = MantisV1.from_pretrained("paris-noah/Mantis-8M")
+network = MantisV1.from_pretrained("paris-noah/Mantis-8M")
 
 # Access the transformer unit with new name
-transf_unit = model.transf_unit
+type(network.transf_unit).__name__ == 'TransformerUnit' # True
+type(network.transf_unit).__name__ == 'ViTUnit' # False
+network.vit_unit # returns `network.transf_unit`
 ```
 
 ### Old Code (Still Works)
 ```python
-from mantis.architecture import Mantis8M, ViTUnit
+from mantis.architecture import Mantis8M
 
 # Create old model
-model = Mantis8M(seq_len=512, hidden_dim=256)
+network = Mantis8M(seq_len=512, hidden_dim=256)
 
 # Load from HuggingFace
-model = Mantis8M.from_pretrained("paris-noah/Mantis-8M")
+network = Mantis8M.from_pretrained("paris-noah/Mantis-8M")
 
-# Access the transformer unit with old name (property alias)
-vit_unit = model.vit_unit  # This is an alias for model.transf_unit
+# Access the transformer unit with old name
+type(network.vit_unit).__name__ == 'ViTUnit' # True
+type(network.vit_unit).__name__ == 'TransformerUnit' # False
+network.transf_unit # AttributeError: type object 'Mantis8M' has no attribute 'transf_unit'
 ```
 
 ## How It Works
 
 ### Class Aliases
-- `Mantis8M` is an alias for `MantisV1`
-- `ViTUnit` is an alias for `TransformerUnit`
+- `Mantis8M` is kept for legacy
+- `ViTUnit` is a copy of `TransformerUnit`
 
 ### Property Aliases
 - `MantisV1` (formerly `Mantis8M`) has a `vit_unit` property that returns `self.transf_unit`
-- The property is read/write, so old code using `model.vit_unit = ...` still works
+- The property is read/write, so calling `model.vit_unit = ...` for MantisV1 still works
 
 ### Checkpoint Loading
 The `MantisV1.from_pretrained()` method automatically handles old checkpoints:
@@ -52,4 +56,4 @@ The `MantisV1.from_pretrained()` method automatically handles old checkpoints:
 
 ## Migration Path
 
-You don't need to update your code immediately. Both old and new names work interchangeably. However, for new code, consider using `MantisV1` instead of `Mantis8M` to ensure your code is future-proof as the library evolves.
+You don't need to update your code immediately, except you used to directly access `vit_utils` subpackage, which does not exist anymore. Otherwise, both old and new names work interchangeably. Consider using `MantisV1` instead of `Mantis8M` to ensure your code is future-proof as the library evolves.
