@@ -114,15 +114,23 @@ class TransformerUnit(nn.Module):
         self.transformer = Transformer(
             hidden_dim, depth, heads, dim_head, mlp_dim, dropout)
 
-    def forward(self, x):
+    def forward(self, x, output_token='cls_token', return_layer=-1):
         b, n, _ = x.shape
         cls_tokens = repeat(self.cls_token, 'd -> b d', b=b)
         x_embeddings, ps = pack([cls_tokens, x], 'b * d')
         x_embeddings = self.pos_encoder(
             x_embeddings.transpose(0, 1)).transpose(0, 1)
-        x_embeddings = self.transformer(x_embeddings)
-        cls_tokens, _ = unpack(x_embeddings, ps, 'b * d')
-        return cls_tokens.reshape(cls_tokens.shape[0], -1)
+        x_embeddings = self.transformer(x_embeddings, return_layer=return_layer)
+        cls_tokens, other = unpack(x_embeddings, ps, 'b * d')
+        cls_token = cls_tokens.reshape(cls_tokens.shape[0], -1)
+        if output_token == 'cls_token':
+            return cls_token
+        mean_token = other.mean(dim=1)
+        if output_token == 'mean_token':
+            return mean_token
+        if output_token == 'combined':
+            return torch.cat([cls_token, mean_token], dim=1)
+        raise KeyError("Unknown output type")
 
 
 class ViTUnit(nn.Module):
@@ -144,6 +152,19 @@ class ViTUnit(nn.Module):
         x_embeddings = self.transformer(x_embeddings)
         cls_tokens, _ = unpack(x_embeddings, ps, 'b * d')
         return cls_tokens.reshape(cls_tokens.shape[0], -1)
+
+
+def rename_vit_unit_weights_hook(state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs):
+    # Iterate over a copy of the keys to avoid modification errors
+    for key in list(state_dict.keys()):
+        # Check if the key corresponds to the old 'vit_unit'
+        # 'prefix' handles cases where this model is a submodule of a larger model
+        if key.startswith(prefix + 'vit_unit.'):
+            # Create the new key name
+            new_key = key.replace(prefix + 'vit_unit.', prefix + 'transf_unit.')
+            
+            # Move the data to the new key and delete the old one
+            state_dict[new_key] = state_dict.pop(key)
 
 
 class MantisV1(
@@ -196,20 +217,25 @@ class MantisV1(
 
     def __init__(self, seq_len=512, hidden_dim=256, num_patches=32, scalar_scales=None, hidden_dim_scalar_enc=32,
                  epsilon_scalar_enc=1.1, transf_depth=6, transf_num_heads=8, transf_mlp_dim=512, transf_dim_head=128,
-                 transf_dropout=0.1, device='cuda', pre_training=False):
+                 transf_dropout=0.1, device='cuda', pre_training=False, return_transf_layer=-1, output_token='cls_token'):
 
         super().__init__()
         assert (seq_len % num_patches) == 0, print(
             'Seq_len must be the multiple of num_patches')
         patch_window_size = int(seq_len / num_patches)
 
-        self.hidden_dim = hidden_dim
+        self.hidden_dim = 2 * hidden_dim if output_token == 'combined' else hidden_dim
         self.num_patches = num_patches
         self.scalar_scales = scalar_scales
         self.hidden_dim_scalar_enc = hidden_dim_scalar_enc
         self.epsilon_scalar_enc = epsilon_scalar_enc
         self.seq_len = seq_len
         self.pre_training = pre_training
+        self.return_transf_layer = return_transf_layer
+        self.output_token = output_token
+
+        # Hook
+        self._register_load_state_dict_pre_hook(rename_vit_unit_weights_hook)
 
         self.tokgen_unit = TokenGeneratorUnit(hidden_dim=hidden_dim,
                                               num_patches=num_patches,
@@ -218,8 +244,8 @@ class MantisV1(
                                               hidden_dim_scalar_enc=hidden_dim_scalar_enc,
                                               epsilon_scalar_enc=epsilon_scalar_enc)
         self.transf_unit = TransformerUnit(hidden_dim=hidden_dim, num_patches=num_patches, depth=transf_depth,
-                                           heads=transf_num_heads, mlp_dim=transf_mlp_dim, dim_head=transf_dim_head,
-                                           dropout=transf_dropout, device=device)
+                           heads=transf_num_heads, mlp_dim=transf_mlp_dim, dim_head=transf_dim_head,
+                           dropout=transf_dropout, device=device)
 
         self.prj = nn.Sequential(
             nn.LayerNorm(self.hidden_dim),
@@ -228,58 +254,27 @@ class MantisV1(
 
         self.to(device)
 
-    @property
-    def vit_unit(self):
-        """Backward compatibility property for old ViTUnit name."""
-        return self.transf_unit
-    
-    @vit_unit.setter
-    def vit_unit(self, value):
-        """Backward compatibility setter for old ViTUnit name."""
-        self.transf_unit = value
-
     def to(self, device):
         self.device = device
         return super().to(device)
 
     def forward(self, x):
         x_embeddings = self.tokgen_unit(x)
-        transf_out = self.transf_unit(x_embeddings)
+        transf_out = self.transf_unit(x_embeddings, output_token=self.output_token,
+                                      return_layer=self.return_transf_layer)
         if self.pre_training:
             return self.prj(transf_out)
         else:
             return transf_out
-
-    @classmethod
-    def from_pretrained(cls, *args, **kwargs):
-        """
-        Load a model from HuggingFace Hub with backward compatibility.
         
-        This method handles the renaming of 'vit_unit' to 'transf_unit' and
-        'ViTUnit' to 'TransformerUnit' when loading checkpoints that were
-        saved with the old naming convention.
-        """
-        # Call parent's from_pretrained
-        model = super().from_pretrained(*args, **kwargs)
-        
-        # Handle backward compatibility: rename vit_unit to transf_unit if it exists
-        if hasattr(model, 'vit_unit') and not hasattr(model, 'transf_unit'):
-            model.transf_unit = model.vit_unit
-            delattr(model, 'vit_unit')
-        
-        # Handle module renaming in state dict (for checkpoints with old structure)
-        state_dict = model.state_dict()
-        new_state_dict = {}
-        for key, value in state_dict.items():
-            # Rename vit_unit to transf_unit in state dict keys
-            new_key = key.replace('vit_unit', 'transf_unit')
-            new_state_dict[new_key] = value
-        
-        # Only reload if we made changes
-        if new_state_dict != state_dict:
-            model.load_state_dict(new_state_dict, strict=False)
-        
-        return model
+    def from_pretrained(self, *args, **kwargs):
+        network = super().from_pretrained(*args, **kwargs)
+        network.return_transf_layer = self.return_transf_layer
+        network.output_token = self.output_token
+        network.pre_training = self.pre_training
+        network.hidden_dim = self.hidden_dim
+        network.device = self.device
+        return network.to(self.device)
 
 
 class Mantis8M(

@@ -85,8 +85,21 @@ class Transformer(nn.Module):
                 PreNorm(dim, FeedForward(dim, mlp_dim, dropout=dropout))
             ]))
 
-    def forward(self, x):
-        for attn, ff in self.layers:
+    def forward(self, x, return_layer=-1):
+        """
+        Forward pass through transformer layers.
+
+        Parameters
+        ----------
+        x: torch.Tensor
+            Input tensor of shape (batch, seq_len, dim).
+        return_layer: int, default=-1
+            If >=0, return the output after the specified transformer layer index (0-based).
+            If -1, return the output after the last layer.
+        """
+        for i, (attn, ff) in enumerate(self.layers):
             x = attn(x) + x
             x = ff(x) + x
+            if return_layer == i:
+                return x
         return x
