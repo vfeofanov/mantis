@@ -108,26 +108,22 @@ class TransformerUnit(nn.Module):
         self.transformer = Transformer(num_layers=depth, embed_dim=hidden_dim, num_heads=heads, 
                                        mlp_hidden_dim=mlp_dim, dropout=dropout, dim_head=dim_head)
         
-    def forward(self, x, tokens=False, output_token='cls_token', return_layer=-1):
+    def forward(self, x, output_token='cls_token', return_layer=-1):
         b, n, _ = x.shape
         cls_tokens = repeat(self.cls_token, 'd -> b 1 d', b=b)
-        
+
         x_embeddings = torch.cat([x, cls_tokens], dim=1)
         x_embeddings = x_embeddings[:, None, :, :]
         x_embeddings = self.transformer(x_embeddings, return_layer=return_layer)[:, 0, :, :]
         cls_token = x_embeddings[:, -1, :]
-        if tokens:
-            return x_embeddings[:, :-1, :]
         if output_token == 'cls_token':
             return cls_token
-        else:
-            mean_token = x_embeddings[:, :-1, :].mean(axis=1)
-            if output_token == 'mean_token':
-                return mean_token
-            elif output_token == 'combined':
-                return torch.cat([cls_token, mean_token], dim=1)
-            else:
-                raise KeyError("Unknown output type")
+        mean_token = x_embeddings[:, :-1, :].mean(axis=1)
+        if output_token == 'mean_token':
+            return mean_token
+        if output_token == 'combined':
+            return torch.cat([cls_token, mean_token], dim=1)
+        raise KeyError("Unknown output type")
 
 
 class MantisV2(
@@ -241,7 +237,7 @@ class MantisV2(
         network.device = self.device
         return network.to(self.device)
 
-    def forward(self, x, tokens=False):
+    def forward(self, x):
         """
         x should be of size (n_samples, n_channels=1, seq_len), where seq_len must be a multiple of num_patches.
         If your time series data are with non-fixed sequence length, please pad or resize them to the same size.
@@ -250,7 +246,7 @@ class MantisV2(
         assert (seq_len % self.num_patches) == 0, print('Seq_len must be the multiple of num_patches')
 
         x_embeddings = self.tokgen_unit(x)
-        x_embeddings = self.transf_unit(x_embeddings, tokens=tokens, 
+        x_embeddings = self.transf_unit(x_embeddings,
                                         output_token=self.output_token,
                                         return_layer=self.return_transf_layer,
                                         )
