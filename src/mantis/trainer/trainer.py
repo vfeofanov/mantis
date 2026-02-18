@@ -312,13 +312,12 @@ class MantisTrainer:
         self.network.eval()
         dataloader = self._prepare_dataloader_for_inference(x, batch_size)
         outs = []
-        for _, batch in enumerate(dataloader):
-            x = batch[0].to(self.device)
-            with torch.no_grad():
+        with torch.no_grad():
+            for _, batch in enumerate(dataloader):
+                x = batch[0].to(self.device)
                 out = self.network(x)
-            outs.append(out)
+                outs.append(out)
         outs = torch.cat(outs)
-        self.network.train()
         if to_numpy:
             return outs.cpu().numpy()
         else:
