@@ -113,7 +113,7 @@ class MantisTrainer:
             optimizer = torch.optim.AdamW(
                 self.network.parameters(), lr=base_learning_rate, betas=(0.9, 0.999), weight_decay=0.05)
         else:
-            optimizer = init_optimizer(parameters)
+            optimizer = init_optimizer(self.network.parameters())
 
         # get rank of gpu
         rank = dist.get_rank() if (data_parallel and dist.is_initialized()) else 0
