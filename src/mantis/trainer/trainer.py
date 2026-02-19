@@ -215,12 +215,21 @@ class MantisTrainer:
         else:
             adapter = None
         # when fine-tuning head, the forward pass over the encoder will be done only once (see init data_loader below)
-        self.fine_tuned_model = FineTuningNetwork(
-            deepcopy(self.network), head, adapter).to(self.device)
+        if fine_tuning_type == 'head':
+            self.fine_tuned_model = FineTuningNetwork(None, head, adapter).to(self.device)
+        else:
+            self.fine_tuned_model = FineTuningNetwork(self.network, head, adapter).to(self.device)
 
-        # ==== get params to fine-tune and set them into the training model ====
+        # ==== get params to fine-tune, set them into the training model, and freeze the rest parameters ====
         parameters = self._get_fine_tuning_params(
             fine_tuning_type=fine_tuning_type)
+        # Freeze all parameters except those to be optimized
+        params_to_optimize = set([p for p in parameters])
+        for _, param in self.fine_tuned_model.named_parameters():
+            if param in params_to_optimize:
+                param.requires_grad = True
+            else:
+                param.requires_grad = False
         self.fine_tuned_model.eval()
         self._set_train(fine_tuning_type=fine_tuning_type)
 
@@ -237,7 +246,12 @@ class MantisTrainer:
             optimizer = init_optimizer(parameters)
 
         # init dataloader, for the head fine-tuning we directly load the embeddings
-        train_dataset = LabeledDataset(x, y)
+        if fine_tuning_type == 'head':
+            train_dataset = LabeledDataset(
+                self.transform(x, batch_size=batch_size, three_dim=False),
+                y)
+        else:
+            train_dataset = LabeledDataset(x, y)
         data_loader = DataLoader(
             train_dataset, batch_size=batch_size, shuffle=True)
 
@@ -350,6 +364,9 @@ class MantisTrainer:
         for _, batch in enumerate(dataloader):
             x = batch[0].to(self.device)
             with torch.no_grad():
+                if self.fine_tuning_type == 'head':
+                    # for head fine-tuning, we need to do the forward pass over the encoder first to get the embeddings, and then apply the head to them
+                    x = torch.cat([self.network(x[:, [i], :]) for i in range(x.shape[1])], dim=-1)
                 out = torch.softmax(self.fine_tuned_model(x), dim=-1)
             outs.append(out.cpu())
         outs = torch.cat(outs)
