@@ -68,5 +68,5 @@ def test_multichannel_extract_feats(device, adapter):
     print(f'Accuracy on the test set is {np.mean(y_test == y_pred)}')
 
     print(
-        f"The test of feature extraction for single channel classification with device={device} has been passed succesfully."
+        f"The test of feature extraction for multi-channel classification with device={device} has been passed succesfully."
     )

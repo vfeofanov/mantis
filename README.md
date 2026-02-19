@@ -1,11 +1,14 @@
-# Mantis: Lightweight Calibrated Foundation Model for User-Friendly Time Series Classification
+# Mantis: Lightweight Foundation Model for Time Series Classification
 
 <div align="center">
   
-[![PyPI](https://img.shields.io/badge/PyPI-0.2.0-blue)](https://pypi.org/project/mantis-tsfm/)
-[![preprint](https://img.shields.io/static/v1?label=arXiv&message=2502.15637&color=B31B1B&logo=arXiv)](https://arxiv.org/abs/2502.15637)
-[![huggingface](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Checkpoint-FFD21E)](https://huggingface.co/paris-noah/Mantis-8M)
-[![License: MIT](https://img.shields.io/badge/License-MIT-65A938)](https://opensource.org/license/MIT)
+[![PyPI](https://img.shields.io/badge/PyPI-1.0.0-blue)](https://pypi.org/project/mantis-tsfm/)
+[![preprint](https://img.shields.io/static/v1?label=MantisV1&message=2502.15637&color=B31B1B&logo=arXiv)](https://arxiv.org/abs/2502.15637)
+<!-- [![preprint](https://img.shields.io/static/v1?label=MantisV2&message=2502.15637&color=B31B1B&logo=arXiv)](https://arxiv.org/abs/2502.15637) -->
+[![huggingface](https://img.shields.io/badge/%F0%9F%A4%97%20%20HF-Mantis-FFD21E)](https://huggingface.co/paris-noah/Mantis-8M)
+[![huggingface](https://img.shields.io/badge/%F0%9F%A4%97%20%20HF-MantisPlus-FFD21E)](https://huggingface.co/paris-noah/MantisPlus)
+[![huggingface](https://img.shields.io/badge/%F0%9F%A4%97%20%20HF-MantisV2-FFD21E)](https://huggingface.co/paris-noah/MantisV2)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-65A938)](https://opensource.org/license/apache-2-0)
 [![Python](https://img.shields.io/badge/Python-3.9|3.10|3.11|3.12-blue)]()
 
 
@@ -14,25 +17,26 @@
 
 <br>
 
-> **🚨 NEW Version 0.2.0: Mantis pre-training is now available! 🚨**
+> **🚨 NEW Version 1.0.0: Mantis+ and MantisV2 are now available! 🚨**
 
 ## Overview
 
-**Mantis** is an open-source time series classification foundation model implemented by [Huawei Noah's Ark Lab](https://huggingface.co/paris-noah).\
-The paper can be found on [arXiv](https://arxiv.org/abs/2502.15637) while pre-trained weights are stored on [Hugging Face](https://huggingface.co/paris-noah/Mantis-8M).
+**Mantis** is a family of open-source time series classification foundation models. 
+<!-- The paper can be found on [arXiv](https://arxiv.org/abs/2502.15637) while pre-trained weights are stored on [Hugging Face](https://huggingface.co/paris-noah/Mantis-8M). -->
 
 The key features of Mantis:
 
  - *Zero-shot feature extraction:* The model can be used in a frozen state to extract deep features and train a classifier on them.
  - *Fine-tuning:* To achieve the highest performance, the model can be further fine-tuned for a new task.
- - *Lightweight:* The model contains 8 million parameters, which allows it to be fine-tuned on a single GPU (even feasible on a CPU).
+ - *Lightweight:* Our models contain few million parameters, allowing us to fine-tune them on a single GPU (even feasible on a CPU).
  - *Calibration:* In our studies, we have shown that Mantis is the most calibrated foundation model for classification so far.
  - *Adaptable to large-scale datasets:* For datasets with a large number of channels, we propose additional adapters that reduce memory requirements.
 
 <p align="center">
-  <img src="figures/zero-shot-exp-results.png" alt="Logo" height="300"/> 
+  <!-- <img src="figures/zero-shot-exp-results.png" alt="Logo" height="300"/>  -->
   
-  <img src="figures/fine-tuning-exp-results.png" alt="Logo" height="300"/>
+  <!-- <img src="figures/fine-tuning-exp-results.png" alt="Logo" height="300"/> -->
+  <img src="figures/mantis-v2-teaser-plot.png" alt="Plot" height="250"/> 
 </p>
 
 Below we give instructions how the package can be installed and used.
@@ -103,12 +107,20 @@ Generally speaking, the interpolation size is a hyperparameter to play with. Nev
 
 ### Initialization.
 
-To load our pre-trained model with 8M parameters from the Hugging Face, it is sufficient to run:
+To this moment, we have two backbones and three checkpoints:
+
+|| Mantis| Mantis+| MantisV2|
+|-|-|-|-|
+|**Module**| `MantisV1`| `MantisV1`| `MantisV2`|
+|**Checkpoint**| `paris-noah/Mantis-8M`| `paris-noah/MantisPlus`| `paris-noah/MantisV2`|
+
+
+ To load our of these pre-trained model from the Hugging Face, you can do as follows:
 
 ``` python
-from mantis.architecture import Mantis8M
+from mantis.architecture import MantisV1
 
-network = Mantis8M(device='cuda')
+network = MantisV1(device='cuda')
 network = network.from_pretrained("paris-noah/Mantis-8M")
 ```
 
@@ -170,6 +182,8 @@ cd getting_started/
 python -m torch.distributed.run --nproc_per_node=4 --nnodes=1 pretrain.py --seed 42
 ```
 
+We have open-sourced [CauKer 2M](https://huggingface.co/datasets/paris-noah/CauKer2M), the synthetic data set we used to pre-train the two version of Mantis, resulting in [MantisPlus](https://huggingface.co/paris-noah/MantisPlus) and [MantisV2](https://huggingface.co/paris-noah/MantisV2) checkpoints. The `pretrain` method directly supports a HF dataset as an input. 
+
 ## Structure
 
 ```
@@ -188,9 +202,7 @@ This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE
 
 ## Open-source Participation
 
-We would be happy to receive feedback and integrate any suggestion, so do not hesitate to contribute to this project by raising a GitHub issue or contacting us by email:
-
- - Vasilii Feofanov - vasilii [dot] feofanov [at] huawei [dot] com
+We would be happy to receive feedback and integrate any suggestion, so do not hesitate to contribute to this project by raising a GitHub issue.
 
 
 ## Citing Mantis 📚
