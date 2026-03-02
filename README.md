@@ -4,7 +4,7 @@
   
 [![PyPI](https://img.shields.io/badge/PyPI-1.0.0-blue)](https://pypi.org/project/mantis-tsfm/)
 [![preprint](https://img.shields.io/static/v1?label=MantisV1&message=2502.15637&color=B31B1B&logo=arXiv)](https://arxiv.org/abs/2502.15637)
-[![preprint](https://img.shields.io/static/v1?label=MantisV2&message=2502.15637&color=B31B1B&logo=arXiv)](https://arxiv.org/html/2602.17868v1)
+[![preprint](https://img.shields.io/static/v1?label=MantisV2&message=2602.17868&color=B31B1B&logo=arXiv)](https://arxiv.org/html/2602.17868v1)
 [![huggingface](https://img.shields.io/badge/%F0%9F%A4%97%20%20HF-Mantis-FFD21E)](https://huggingface.co/paris-noah/Mantis-8M)
 [![huggingface](https://img.shields.io/badge/%F0%9F%A4%97%20%20HF-MantisPlus-FFD21E)](https://huggingface.co/paris-noah/MantisPlus)
 [![huggingface](https://img.shields.io/badge/%F0%9F%A4%97%20%20HF-MantisV2-FFD21E)](https://huggingface.co/paris-noah/MantisV2)
