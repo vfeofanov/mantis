@@ -2,13 +2,13 @@
 
 <div align="center">
   
+[![preprint](https://img.shields.io/static/v1?label=Mantis&message=2502.15637&color=B31B1B&logo=arXiv)](https://arxiv.org/abs/2502.15637)
 [![PyPI](https://img.shields.io/badge/PyPI-1.0.0-blue)](https://pypi.org/project/mantis-tsfm/)
-[![preprint](https://img.shields.io/static/v1?label=MantisV1&message=2502.15637&color=B31B1B&logo=arXiv)](https://arxiv.org/abs/2502.15637)
-[![preprint](https://img.shields.io/static/v1?label=MantisV2&message=2602.17868&color=B31B1B&logo=arXiv)](https://arxiv.org/html/2602.17868v1)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-65A938)](https://opensource.org/license/apache-2-0)
+<!-- [![preprint](https://img.shields.io/static/v1?label=MantisV2&message=2602.17868&color=B31B1B&logo=arXiv)](https://arxiv.org/html/2602.17868v1) -->
 [![huggingface](https://img.shields.io/badge/%F0%9F%A4%97%20%20HF-Mantis-FFD21E)](https://huggingface.co/paris-noah/Mantis-8M)
 [![huggingface](https://img.shields.io/badge/%F0%9F%A4%97%20%20HF-MantisPlus-FFD21E)](https://huggingface.co/paris-noah/MantisPlus)
 [![huggingface](https://img.shields.io/badge/%F0%9F%A4%97%20%20HF-MantisV2-FFD21E)](https://huggingface.co/paris-noah/MantisV2)
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-65A938)](https://opensource.org/license/apache-2-0)
 [![Python](https://img.shields.io/badge/Python-3.9|3.10|3.11|3.12-blue)]()
 
 
@@ -17,7 +17,7 @@
 
 <br>
 
-> **🚨 NEW Version 1.0.0: Mantis+ and MantisV2 are now available! 🚨**
+> **🚨 NEW: Mantis was published at ICML'26, see the [paper](https://arxiv.org/pdf/2502.15637)! 🚨**
 
 ## Overview
 
@@ -207,8 +207,31 @@ We would be happy to receive feedback and integrate any suggestion, so do not he
 
 ## Citing Mantis 📚
 
-If you use Mantis in your work, please cite this technical report:
+If you use Mantis in your work, please cite our papers :)
 
+1. The ICML paper that combines the contributions of V1 and V2:
+```bibtex
+@inproceedings{
+feofanov2026mantis,
+title={Mantis: Lightweight Foundation Model for Time Series Classification},
+author={Vasilii Feofanov and Songkang Wen and Shifeng Xie and Simon Roschmann and Marius Alonso and Hongbo Guo and Romain Ilbert and Malik Tiomoko and Quentin Bouniot and Zeynep Akata and Lujia Pan and Jianfeng Zhang and Ievgen Redko},
+booktitle={Forty-third International Conference on Machine Learning},
+year={2026},
+url={https://openreview.net/forum?id=gbJMAjXLZ4}
+}
+```
+
+2. MantisV2 and Mantis+ report:
+```bibtex
+@article{feofanov2026mantisv2,
+  title={Mantisv2: Closing the zero-shot gap in time series classification with synthetic data and test-time strategies},
+  author={Feofanov, Vasilii and Wen, Songkang and Zhang, Jianfeng and Pan, Lujia and Redko, Ievgen},
+  journal={arXiv preprint arXiv:2602.17868},
+  year={2026}
+}
+```
+
+3. Original tech report:
 ```bibtex
 @article{feofanov2025mantis,
   title={Mantis: Lightweight Calibrated Foundation Model for User-Friendly Time Series Classification},

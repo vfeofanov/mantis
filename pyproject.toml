@@ -16,7 +16,7 @@ authors = [
 maintainers = [
   "Vasilii Feofanov <vasilii.feofanov@huawei.com>",
 ]
-license = "MIT"
+license = "Apache-2.0"
 readme = "README.md"
 keywords = ["Time Series Foundation Model", "Classification", "Transformer"]
 classifiers = [
@@ -27,7 +27,7 @@ classifiers = [
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
-  "License :: OSI Approved :: MIT License",
+  "License :: OSI Approved :: Apache Software License",
   "Topic :: Scientific/Engineering :: Artificial Intelligence"
   
 ]
