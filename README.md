@@ -211,8 +211,7 @@ If you use Mantis in your work, please cite our papers :)
 
 1. The ICML paper that combines the contributions of V1 and V2:
 ```bibtex
-@inproceedings{
-feofanov2026mantis,
+@inproceedings{feofanov2026mantis,
 title={Mantis: Lightweight Foundation Model for Time Series Classification},
 author={Vasilii Feofanov and Songkang Wen and Shifeng Xie and Simon Roschmann and Marius Alonso and Hongbo Guo and Romain Ilbert and Malik Tiomoko and Quentin Bouniot and Zeynep Akata and Lujia Pan and Jianfeng Zhang and Ievgen Redko},
 booktitle={Forty-third International Conference on Machine Learning},
