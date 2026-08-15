@@ -22,3 +22,18 @@
 - `MantisTrainer.fit`: fixed head fine-tuning: the forward pass over the encoder is performed only once to save computational time.
 - `getting_started/intermediate_layers.ipynb` demonstrates how to use `return_transf_layer` and `output_token` arguments.
 - updated tests.
+
+## [1.1.0] - 2026-08-15
+### Added
+- support of the UTICA checkpoint (`fegounna/Utica`) for the `MantisV1` architecture, with `getting_started/utica.ipynb` demonstrating how to load it and how `return_transf_layer` and `output_token` affect its accuracy.
+- `getting_started/mantis_and_tivit.ipynb` shows how to concatenate our embeddings with those of [TiViT](https://github.com/ExplainableML/TiViT). The notebook is self-contained and does not add any dependency to the package.
+- `getting_started/self_ensembling.ipynb` demonstrates self-ensembling: the input sequence is resized to several lengths, each of them is passed through the network, and the outputs are concatenated to form the final embedding.
+
+### Fixed
+- `MantisV1.from_pretrained` and `MantisV2.from_pretrained`: the device of the network is no longer taken from the checkpoint repository. Previously, loading from a repository without `config.json` built the network on the default device instead of the requested one, which failed on machines without CUDA.
+
+### Changed
+- `MantisTrainer.fit`: the default prediction head is now a linear layer preceded by `BatchNorm1d` instead of `LayerNorm`, as it delivers superior performance. A trailing batch with a single sample is dropped, since it cannot be batch-normalized. **This changes the results of fine-tuning runs that rely on the default head**; pass `head` explicitly to `fit` to keep the previous behavior.
+- relaxed the `safetensors` requirement from `>=0.4,<0.5` to `>=0.4`, which is needed to support Python 3.13 and 3.14.
+- switched dependency management from Poetry to [uv](https://docs.astral.sh/uv/): dependencies are declared in the standard `[project]` table of `pyproject.toml` and pinned in `uv.lock`.
+- fixed the ambiguity with the license: it is Apache 2.0.

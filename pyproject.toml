@@ -1,6 +1,6 @@
 [project]
 name = "mantis-tsfm"
-version = "1.0.0"
+version = "1.1.0"
 description = "Mantis: Lightweight Calibrated Foundation Model for User-Friendly Time Series Classification"
 authors = [
     { name = "Vasilii Feofanov", email = "vasilii.feofanov@huawei.com" },
