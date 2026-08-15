@@ -229,6 +229,9 @@ class MantisV2(
         self.transf_unit.transformer.layers = self.transf_unit.transformer.layers[:self.return_transf_layer+1]
 
     def from_pretrained(self, *args, **kwargs):
+        # a checkpoint repository without config.json provides no device, in which case the
+        # network would be built on the constructor's default one instead of the requested one
+        kwargs.setdefault('device', self.device)
         network = super().from_pretrained(*args, **kwargs)
         network.return_transf_layer = self.return_transf_layer
         network.output_token = self.output_token
