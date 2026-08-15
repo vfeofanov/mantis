@@ -34,6 +34,8 @@
 
 ### Changed
 - `MantisTrainer.fit`: the default prediction head is now a linear layer preceded by `BatchNorm1d` instead of `LayerNorm`, as it delivers superior performance. A trailing batch with a single sample is dropped, since it cannot be batch-normalized. **This changes the results of fine-tuning runs that rely on the default head**; pass `head` explicitly to `fit` to keep the previous behavior.
+- dropped the support of Python 3.9, which reached its end of life in October 2025, so that `requires-python` is now `>=3.10,<4.0`. Several dependencies have stopped releasing versions for 3.9, which left their known vulnerabilities unpatched in `uv.lock`.
 - relaxed the `safetensors` requirement from `>=0.4,<0.5` to `>=0.4`, which is needed to support Python 3.13 and 3.14.
+- relaxed the `pytest` development requirement from `>=7.1,<9.0` to `>=7.1`.
 - switched dependency management from Poetry to [uv](https://docs.astral.sh/uv/): dependencies are declared in the standard `[project]` table of `pyproject.toml` and pinned in `uv.lock`.
 - fixed the ambiguity with the license: it is Apache 2.0.

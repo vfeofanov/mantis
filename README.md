@@ -9,7 +9,7 @@
 [![huggingface](https://img.shields.io/badge/%F0%9F%A4%97%20%20HF-Mantis-FFD21E)](https://huggingface.co/paris-noah/Mantis-8M)
 [![huggingface](https://img.shields.io/badge/%F0%9F%A4%97%20%20HF-MantisPlus-FFD21E)](https://huggingface.co/paris-noah/MantisPlus)
 [![huggingface](https://img.shields.io/badge/%F0%9F%A4%97%20%20HF-MantisV2-FFD21E)](https://huggingface.co/paris-noah/MantisV2)
-[![Python](https://img.shields.io/badge/Python-3.9|3.10|3.11|3.12|3.13|3.14-blue)]()
+[![Python](https://img.shields.io/badge/Python-3.10|3.11|3.12|3.13|3.14-blue)]()
 
 
 <img src="figures/mantis_logo_white_with_font.png" alt="Logo" height="300"/>
@@ -66,7 +66,7 @@ uv sync
 This uses the versions pinned in [`uv.lock`](uv.lock). By default, uv picks a compatible Python
 interpreter, downloading one if needed. To choose the version yourself, run:
 ```bash
-uv sync --python 3.9
+uv sync --python 3.10
 ```
 If you want to run any command within the environment, instead of activating the environment manually, you can use `uv run`:
 ```bash

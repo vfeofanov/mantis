@@ -19,13 +19,12 @@ maintainers = [
 license = "Apache-2.0"
 license-files = ["LICENSE"]
 readme = "README.md"
-requires-python = ">=3.9,<4.0"
+requires-python = ">=3.10,<4.0"
 keywords = ["Time Series Foundation Model", "Classification", "Transformer"]
 classifiers = [
   "Intended Audience :: Science/Research",
   "Intended Audience :: Developers",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
@@ -48,7 +47,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-  "pytest>=7.1,<9.0",
+  "pytest>=7.1",
 ]
 
 [tool.poetry]
