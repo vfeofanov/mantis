@@ -175,7 +175,7 @@ class MantisTrainer:
         head: nn.Module, default=None
             Head is a part of the network that follows the foundation model and projects from the embedding space
             to the probability matrix of shape ``(n_samples, n_classes)``. By default, head is a linear layer ``Linear``
-            preceded by the layer normalization ``LayerNorm``.
+            preceded by batch normalization ``BatchNorm1d``.
         num_epochs: int, default=500
             Number of training epochs.
         batch_size: int, default=256
@@ -203,7 +203,7 @@ class MantisTrainer:
         if head is None:
             num_channels = x.shape[1] if adapter is None else adapter.new_num_channels
             head = nn.Sequential(
-                nn.LayerNorm(self.network.hidden_dim * num_channels),
+                nn.BatchNorm1d(self.network.hidden_dim * num_channels),
                 nn.Linear(self.network.hidden_dim *
                           num_channels, np.unique(y).shape[0])
             ).to(self.device)
@@ -252,8 +252,12 @@ class MantisTrainer:
                 y)
         else:
             train_dataset = LabeledDataset(x, y)
+        # a trailing batch of one sample cannot be batch-normalized, so drop it as long as
+        # at least one full batch remains
+        drop_last = len(train_dataset) > batch_size and len(
+            train_dataset) % batch_size == 1
         data_loader = DataLoader(
-            train_dataset, batch_size=batch_size, shuffle=True)
+            train_dataset, batch_size=batch_size, shuffle=True, drop_last=drop_last)
 
         # ==== training loop ====
         progress_bar = tqdm(range(num_epochs))
