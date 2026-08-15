@@ -1,43 +1,79 @@
-# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
+# This workflow will install Python dependencies and run tests with a variety of Python versions
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
 # Integrated with uv for dependency management
 
 name: Python package
 
-# on:
-#  push:
-#    branches: [ "main" ]
-#  pull_request:
-#    branches: [ "main" ]
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
-  build:    
+  test:
+    name: ${{ matrix.os }} / Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    env:
+      # keep the checkpoints in the workspace so that one cache path works on every platform
+      HF_HOME: ${{ github.workspace }}/.hf-cache
     strategy:
       fail-fast: false
       matrix:
-        os: 
-          - ubuntu-24.04
-          - ubuntu-22.04
-          - ubuntu-20.04
-          - windows-2022
-          - windows-2019
-          - macos-15
-          - macos-14
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
-    
-    runs-on: ${{ matrix.os }}
+        # every supported Python on Linux, plus the two ends of the range on the other platforms
+        os: [ubuntu-24.04]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
+        include:
+          - os: ubuntu-22.04
+            python-version: "3.9"
+          - os: windows-2025
+            python-version: "3.9"
+          - os: windows-2025
+            python-version: "3.14"
+          - os: windows-2022
+            python-version: "3.14"
+          - os: macos-26
+            python-version: "3.9"
+          - os: macos-26
+            python-version: "3.14"
+          - os: macos-15
+            python-version: "3.14"
+
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v10
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
-          cache-dependency-glob: "uv.lock"
 
       - name: Install dependencies with uv
         run: uv sync --locked
 
-      - name: Run tests
+      # bump the version suffix of the key to pick up a re-uploaded checkpoint
+      - name: Cache the checkpoints
+        uses: actions/cache@v6
+        with:
+          path: .hf-cache
+          key: hf-checkpoints-${{ runner.os }}-v1
+
+      # a failure of this step means that the Hugging Face Hub is unreachable rather than that
+      # the package is broken
+      - name: Download the checkpoints
+        run: |
+          uv run --no-sync hf download paris-noah/Mantis-8M
+          uv run --no-sync hf download paris-noah/MantisPlus
+          uv run --no-sync hf download paris-noah/MantisV2
+          uv run --no-sync hf download fegounna/Utica --revision 3cff4f954191b5bf9839b7a41117e2b24e7693ab
+
+      # the suite downloads several checkpoints from the Hugging Face Hub, so it is run in full
+      # only on Linux, while the other platforms keep to a single fast test
+      - name: Run the test suite
+        if: runner.os == 'Linux'
+        run: uv run --no-sync pytest
+
+      - name: Run the feature extraction test
+        if: runner.os != 'Linux'
         run: uv run --no-sync pytest tests/test_single_channel_extract_feats.py
