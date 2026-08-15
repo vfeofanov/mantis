@@ -1,23 +1,25 @@
-[tool.poetry]
+[project]
 name = "mantis-tsfm"
 version = "1.0.0"
 description = "Mantis: Lightweight Calibrated Foundation Model for User-Friendly Time Series Classification"
 authors = [
-    "Vasilii Feofanov <vasilii.feofanov@huawei.com>",
-    "Songkang Wen",
-    "Marius Alonso",
-    "Romain Ilbert",
-    "Hongbo Guo",
-    "Malik Tiomoko",
-    "Lujia Pan",
-    "Jianfeng Zhang",
-    "Ievgen Redko",
+    { name = "Vasilii Feofanov", email = "vasilii.feofanov@huawei.com" },
+    { name = "Songkang Wen" },
+    { name = "Marius Alonso" },
+    { name = "Romain Ilbert" },
+    { name = "Hongbo Guo" },
+    { name = "Malik Tiomoko" },
+    { name = "Lujia Pan" },
+    { name = "Jianfeng Zhang" },
+    { name = "Ievgen Redko" },
 ]
 maintainers = [
-  "Vasilii Feofanov <vasilii.feofanov@huawei.com>",
+    { name = "Vasilii Feofanov", email = "vasilii.feofanov@huawei.com" },
 ]
 license = "Apache-2.0"
+license-files = ["LICENSE"]
 readme = "README.md"
+requires-python = ">=3.9,<4.0"
 keywords = ["Time Series Foundation Model", "Classification", "Transformer"]
 classifiers = [
   "Intended Audience :: Science/Research",
@@ -27,29 +29,33 @@ classifiers = [
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "License :: OSI Approved :: Apache Software License",
-  "Topic :: Scientific/Engineering :: Artificial Intelligence"
-  
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
+dependencies = [
+  "einops>=0.8,<0.9",
+  "huggingface-hub>=0.23",
+  "datasets>=4.0",
+  "numpy>=1.23,<3.0",
+  "pandas>=1.5,<3.0",
+  "scikit-learn>=1.2,<2.0",
+  "torch>=1.12,<3.0",
+  "tqdm>=4.64,<5.0",
+  "safetensors>=0.4,<0.5",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=7.1,<9.0",
+]
+
+[tool.poetry]
 packages = [
     { include = "mantis", from = "src" }
 ]
 
-[tool.poetry.dependencies]
-python = "^3.9"
-einops = "^0.8"
-huggingface-hub = ">=0.23"
-datasets = ">=4.0"
-numpy = ">=1.23,<3.0"
-pandas = ">=1.5,<3.0"
-scikit-learn = "^1.2"
-torch = ">=1.12,<3.0"
-tqdm = "^4.64"
-safetensors = "^0.4"
-
-[tool.poetry.group.dev.dependencies]
-pytest = ">=7.1,<9.0"
-
 [build-system]
-requires = ["poetry-core"]
+requires = ["poetry-core>=2.0"]
 build-backend = "poetry.core.masonry.api"
