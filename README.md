@@ -17,9 +17,9 @@
 
 <br>
 
-> **🚨 Version 1.1.0 is released: more tutorials, better default prediction head, UTICA's checkpoint support! 🚨**
+> **🚨 Version 1.1.0 is released: more tutorials, better default prediction head, UTICA's checkpoint support!**
 > 
-> **😎 Mantis was published at ICML'26, see the [paper](https://arxiv.org/pdf/2502.15637)! 😎**
+> **😎 Mantis was published at ICML'26, see the [paper](https://arxiv.org/pdf/2502.15637)!**
 
 ## Overview
 
