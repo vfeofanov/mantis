@@ -114,6 +114,7 @@ At the moment, we have two backbones and four checkpoints, including the [UTICA 
 |**Module**| `MantisV1`| `MantisV1`| `MantisV1`| `MantisV2`|
 |**Checkpoint**| `paris-noah/Mantis-8M`| `paris-noah/MantisPlus`| `fegounna/Utica`| `paris-noah/MantisV2`|
 
+If you want to reproduce the results of the ICML paper, please use the `paris-noah/MantisV2` checkpoint. 
 
 To load any of these pre-trained models from Hugging Face, you can do as follows:
 
